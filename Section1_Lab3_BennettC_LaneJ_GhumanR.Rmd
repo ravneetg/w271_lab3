@@ -1,0 +1,71 @@
+---
+title: "Lab 3 - Final Project (Walmart)"
+author: "Chris Bennett, Jackson Lane, Ravneet Ghuman"
+date: "October 29, 2016"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Conducting EDA
+```{r}
+#Load datasets
+setwd("/home/blue/ds/271/assignments/Lab3")
+stores=read.csv("stores.csv") 
+features=read.csv("features.csv")
+
+# review stores dataset
+head(stores)
+str(stores)
+# stores has an ID for each of the 45 stores along with it's type - A, B or C
+# and the size of the store
+by(stores, stores$Type, summary)
+# review shows that type C stores are generally smaller in size compated to the other
+# two. Type A and B have a wider range (size wise)
+
+#review features
+nrow(features)
+# total number of entries = 8190
+# For 45 stores i.e. we have 8190/45=182 entries per store
+features$Date=as.Date(features$Date)
+head(features)
+str(features)
+summary(features)
+
+get_year_month <- function(d) {
+    return(as.integer(format(d, "%m")))
+}
+
+#months vector assuming 1st month is Jan.
+months <- c("Jan","Feb","Mar",
+              "Apr","May","Jun",
+              "Jul","Aug","Sep",
+              "Oct","Nov","Dec")
+
+#add abbreviated month name
+features$monthsText <- months[ get_year_month(features$Date) ]
+features$month <- get_year_month(features$Date)
+
+# Review a summary of months vs holidays
+table(features$monthsText, features$IsHoliday)
+
+hist(features$Temperature)
+hist(features$Fuel_Price)
+hist(features$month)
+
+
+
+```
+
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
