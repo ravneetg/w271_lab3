@@ -12,10 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Conducting EDA
 ```{r}
 #Load datasets
-setwd("/home/blue/ds/271/assignments/Lab3")
+setwd("/home/blue/ds/271/assignments/w271_lab3")
 stores=read.csv("stores.csv") 
 features=read.csv("features.csv")
-
+train=read.csv("train.csv")
 # review stores dataset
 head(stores)
 str(stores)
@@ -56,6 +56,46 @@ hist(features$Fuel_Price)
 hist(features$month)
 
 
+#########review train.csv
+head(train)
+str(train)
+train$Date=as.Date(train$Date)
+summary(train)
+
+temp=read.csv("temp.txt")
+head(temp)
+aggregate(temp$amount,by=list(temp$id), FUN=sum)
+
+# create a new var - total sales by date
+salesbydate=aggregate(train$Weekly_Sales,by=list(train$Date), FUN=sum)
+
+Weekly_Sales.ts = ts(salesbydate$x, frequency=52, start=c(2010,2,5), end=c(2012,10,26) )
+#plot time series
+plot.ts(Weekly_Sales.ts, main="Time series plot for INJCJC4", xlab="Time series", ylab="INJCJC4 Values")
+#plotting histogram for INJCJC4
+hist(Weekly_Sales.ts, breaks = 100)
+acf(Weekly_Sales.ts)
+
+
+############
+# create a new var - total sales by date (only  holidays)
+salesbydate.holidays=aggregate(train$Weekly_Sales[train$IsHoliday==TRUE],by=list(train$Date[train$IsHoliday==TRUE]), FUN=sum)
+Weekly_Sales.ts.holidays = ts(salesbydate.holidays$x, frequency=52, start=c(2010,2,5), end=c(2012,10,26) )
+
+#plot time series
+plot.ts(Weekly_Sales.ts.holidays, main="Time series plot for INJCJC4", xlab="Time series", ylab="INJCJC4 Values")
+#plotting histogram for INJCJC4
+hist(Weekly_Sales.ts.holidays, breaks = 100)
+acf(Weekly_Sales.ts.holidays)
+
+# create a new var - total sales by date (without  holidays)
+salesbydate.noholidays=aggregate(train$Weekly_Sales[train$IsHoliday==FALSE],by=list(train$Date[train$IsHoliday==FALSE]), FUN=sum)
+Weekly_Sales.ts.noholidays = ts(salesbydate.noholidays$x, frequency=52, start=c(2010,2,5), end=c(2012,10,26) )
+#plot time series
+plot.ts(Weekly_Sales.ts.noholidays, main="Time series plot for INJCJC4", xlab="Time series", ylab="INJCJC4 Values")
+#plotting histogram for INJCJC4
+hist(Weekly_Sales.ts.noholidays, breaks = 100)
+acf(Weekly_Sales.ts)
 
 ```
 
