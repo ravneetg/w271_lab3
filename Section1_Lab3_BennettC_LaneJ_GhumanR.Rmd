@@ -5,10 +5,6 @@ date: "October 29, 2016"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## Conducting EDA
 ```{r}
 #Load datasets
@@ -62,10 +58,6 @@ str(train)
 train$Date=as.Date(train$Date)
 summary(train)
 
-temp=read.csv("temp.txt")
-head(temp)
-aggregate(temp$amount,by=list(temp$id), FUN=sum)
-
 # create a new var - total sales by date
 salesbydate=aggregate(train$Weekly_Sales,by=list(train$Date), FUN=sum)
 
@@ -98,16 +90,5 @@ plot.ts(Weekly_Sales.ts.noholidays, main="Time series plot for INJCJC4", xlab="T
 #plotting histogram for INJCJC4
 hist(Weekly_Sales.ts.noholidays, breaks = 100)
 acf(Weekly_Sales.ts)
-
-```
-
-
-
-```{r}
-
-```
-
-
-```{r}
 
 ```
