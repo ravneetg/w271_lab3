@@ -2,3 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+.csv
+shapefiles
+ss14pusb.csv
+ss14pusa.csv
