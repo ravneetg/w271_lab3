@@ -1,0 +1,137 @@
+---
+title: "Lab 3 WorkFile"
+author: "Chris Bennett"
+date: "November 10, 2016"
+output: html_document
+---
+
+##About the 2014 American Community Survey
+Prepared by American Community Survey Office - U.S. Census Bureau - October 27, 2015
+
+The data used in this lab is referred to as the Public Use Microdata Sample (PUMS).
+
+The Public Use Microdata Sample (PUMS) contains a sample of actual responses to the American Community Survey (ACS). The PUMS dataset includes variables for nearly every question on the survey, as well as many new variables that were derived after the fact from multiple survey responses (such as poverty status). Each record in the file represents a single person, or--in the household-level dataset--a single housing unit. In the person-level file, individuals are organized into households, making possible the study of people within the contexts of their families and other household members. PUMS files for an individual year, such as 2014, contain data on approximately one percent of the United States population. PUMS files covering a five-year period, such as 2010-2014, contain data on approximately five percent of the United States population.
+
+The PUMS files are much more flexible than the aggregate data available on American FactFinder, though the PUMS also tend to be more complicated to use. 
+
+Since all ACS responses are strictly confidential, many variables in the PUMS files have been modified in order to protect the confidentiality of survey respondents. For instance, particularly high incomes are "top-coded," uncommon birthplace or ancestry responses are grouped into broader categories, and the PUMS files provide a very limited set of geographic variables (explained more below).
+
+##Weights in PUMS
+
+The ACS PUMS is a weighted sample, and weighting variables must be used to generate accurate estimates and standard errors. The PUMS files include both population weights and household weights. Population weights should be used to generate statistics about individuals, and household weights should be used to generate statistics about housing units. The weighting variables are described briefly below.
+
+###PWGTP: Person's weight for generating statistics on individuals (such as age).
+
+###WGTP: Household weight for generating statistics on housing units and households (such as average household income).
+
+###WGTP1-WGTP80 and PWGTP1-PWGTP80: Replicate weighting variables, used for generating the most accurate standard errors for households or individuals.
+
+Some additional information on the survey's accuracy can be found at: http://www2.census.gov/programs-surveys/acs/tech_docs/pums/accuracy/2015AccuracyPUMS.pdf
+
+All technical documentation for the ACS data can be found at:
+http://www.census.gov/programs-surveys/acs/technical-documentation/pums/documentation.html
+
+```{r}
+
+#The following block of code loads the two survey files and concatenates them together
+
+library(psych)
+
+setwd("c:/data")
+rm(list=ls())
+
+mydata = read.csv("ss14pusa.csv", header=TRUE)
+mydatab = read.csv("ss14pusb.csv", header=TRUE)
+
+names(mydata)
+names(mydatab)
+
+acsdata = rbind(mydata,mydatab)
+
+nrow(mydata) + nrow(mydatab)
+nrow(acsdata)
+
+ls(acsdata)
+describe(acsdata)  #list the variables and the labels for each
+str(acsdata)       #list the variables, datatypes, and first few observations for each
+names(acsdata)
+
+summary(acsdata)
+
+```
+
+###Data features used for this study:
+ADJINC -- Adjustment factor for income and earnings dollar amounts. The value of ADJINC inflation-adjusts reported income to 2015 dollars and applies to FINCP and HINCP in the housing record.
+
+```{r}
+
+#create a dataset that only has features of interest
+
+#Survey/Respondant Identifier Info
+head(acsdata$ST) #state Code
+head(acsdata$SERIALNO) #household number
+head(acsdata$SPORDER) #person number
+head(acsdata$ADJINC) #adj factor for income
+head(acsdata$PWGTP) #statistical weight used for generating stats on attributes like age
+
+#Demographics
+head(acsdata$AGEP) #age
+head(acsdata$QTRBIR) #quarter of birth
+head(acsdata$SEX) #gender
+head(acsdata$RAC1P) #race
+head(acsdata$MAR) #marital status
+head(acsdata$MARHT) #number of times married
+head(acsdata$MARHYP) #year last married (bottom-coded)
+head(acsdata$SCHL) #educational attainment
+head(acsdata$FOD1P) #recoded Field of Degree (first entry)
+head(acsdata$FCITP) #citizenship
+
+#Work-related
+head(acsdata$JWMNP) #travel time to work
+head(acsdata$WKHP) #usual hours worked per week past 12 months
+head(acsdata$YOEP) #years of entry (bottom-coded)
+head(acsdata$INDP) #industry recode
+head(acsdata$NAICSP) #NAICS Indstry code
+head(acsdata$POWSP) #place of work
+
+#Origination
+head(acsdata$ANC1P) #first-reported ancestry
+head(acsdata$LANP) #language spoken at home
+head(acsdata$NATIVITY) #native or foreign born
+head(acsdata$POBP) #place of birth
+
+#Possible Dependent Variables
+head(acsdata$PERNP) #total person's earnings
+head(acsdata$PINCP) #total person's income
+head(acsdata$WAGP) #wages or salary income in past 12 months
+
+acs <- NULL
+myvars <- names(acsdata) %in% c("SERIALNO","ST","SPORDER","ADJINC","AGEP","QTRBIR","SEX","RAC1P","MAR","MARHT","MARHYP","SCHL","FOD1P","FCITP","JWMNP","WKHP","YOEP","INDP","NAICSP","POWSP","ANC1P","LANP","NATIVITY","POBP","WAGP","PERNP","PINCP")
+acs <- acsdata[myvars]
+
+#acs is the data set we will use for our analysis
+names(acs)
+nrow(acs)
+
+#free up the space in memory
+acsdata <- NULL
+mydata <- NULL
+mydatab <- NULL
+```
+
+##Evaluate the Dependent Variables
+
+```{r}
+
+hist(acs$WAGP)
+hist(acs$PERNP)
+hist(acs$PINCP)
+
+hist(log(acs$WAGP))
+hist(log(acs$PERNP))
+hist(log(acs$PINCP))
+
+hist(log(acs$PERNP), col = "blue", freq = FALSE, main="Histogram of Log of 2014 Total Personal Income", xlab="Log of Income", ylab="Qty") 
+lines(density(acs$PERNP), col = "red", lwd = 2) 
+
+```
