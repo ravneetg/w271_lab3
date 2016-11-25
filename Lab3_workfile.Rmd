@@ -36,26 +36,29 @@ http://www.census.gov/programs-surveys/acs/technical-documentation/pums/document
 #The following block of code loads the two survey files and concatenates them together
 
 library(psych)
-
 rm(list=ls())
+#load RData file
+load("w271_lab3.Rproj.RData")
 
-mydata = read.csv("input/ss14pusa.csv", header=TRUE)
-mydatab = read.csv("input/ss14pusb.csv", header=TRUE)
-
-names(mydata)
-names(mydatab)
-
-acsdata = rbind(mydata,mydatab)
-
-nrow(mydata) + nrow(mydatab)
-nrow(acsdata)
-
-ls(acsdata)
-describe(acsdata)  #list the variables and the labels for each
-str(acsdata)       #list the variables, datatypes, and first few observations for each
-names(acsdata)
-
-summary(acsdata)
+# #Code to read data from input files included in case RData file not available
+# 
+# mydata = read.csv("input/ss14pusa.csv", header=TRUE)
+# mydatab = read.csv("input/ss14pusb.csv", header=TRUE)
+# 
+# names(mydata)
+# names(mydatab)
+# 
+# acsdata = rbind(mydata,mydatab)
+# 
+# nrow(mydata) + nrow(mydatab)
+# nrow(acsdata)
+# 
+# ls(acsdata)
+# describe(acsdata)  #list the variables and the labels for each
+# str(acsdata)       #list the variables, datatypes, and first few observations for each
+# names(acsdata)
+# 
+# summary(acsdata)
 
 ```
 
@@ -64,50 +67,53 @@ ADJINC -- Adjustment factor for income and earnings dollar amounts. The value of
 
 ```{r}
 
-#create a dataset that only has features of interest
+# #create a dataset that only has features of interest
+# 
+# #Survey/Respondant Identifier Info
+# head(acsdata$ST) #state Code
+# head(acsdata$SERIALNO) #household number
+# head(acsdata$SPORDER) #person number
+# head(acsdata$ADJINC) #adj factor for income
+# head(acsdata$PWGTP) #statistical weight used for generating stats on attributes like age
+# 
+# #Demographics
+# head(acsdata$AGEP) #age
+# head(acsdata$QTRBIR) #quarter of birth
+# head(acsdata$SEX) #gender
+# head(acsdata$RAC1P) #race
+# head(acsdata$MAR) #marital status
+# head(acsdata$MARHT) #number of times married
+# head(acsdata$MARHYP) #year last married (bottom-coded)
+# head(acsdata$SCHL) #educational attainment
+# head(acsdata$FOD1P) #recoded Field of Degree (first entry)
+# head(acsdata$FCITP) #citizenship
+# 
+# #Work-related
+# head(acsdata$JWMNP) #travel time to work
+# head(acsdata$WKHP) #usual hours worked per week past 12 months
+# head(acsdata$YOEP) #years of entry (bottom-coded)
+# head(acsdata$INDP) #industry recode
+# head(acsdata$NAICSP) #NAICS Indstry code
+# head(acsdata$POWSP) #place of work
+# 
+# #Origination
+# head(acsdata$ANC1P) #first-reported ancestry
+# head(acsdata$LANP) #language spoken at home
+# head(acsdata$NATIVITY) #native or foreign born
+# head(acsdata$POBP) #place of birth
+# 
+# #Possible Dependent Variables
+# head(acsdata$PERNP) #total person's earnings
+# head(acsdata$PINCP) #total person's income
+# head(acsdata$WAGP) #wages or salary income in past 12 months
 
-#Survey/Respondant Identifier Info
-head(acsdata$ST) #state Code
-head(acsdata$SERIALNO) #household number
-head(acsdata$SPORDER) #person number
-head(acsdata$ADJINC) #adj factor for income
-head(acsdata$PWGTP) #statistical weight used for generating stats on attributes like age
+# acs <- NULL
+# myvars <- names(acsdata) %in% c("SERIALNO","ST","SPORDER","ADJINC","AGEP","QTRBIR","SEX","RAC1P","MAR","MARHT","MARHYP","SCHL","FOD1P","FCITP","JWMNP","WKHP","YOEP","INDP","NAICSP","POWSP","ANC1P","LANP","NATIVITY","POBP","WAGP","PERNP","PINCP")
+# acs <- acsdata[myvars]
+```
 
-#Demographics
-head(acsdata$AGEP) #age
-head(acsdata$QTRBIR) #quarter of birth
-head(acsdata$SEX) #gender
-head(acsdata$RAC1P) #race
-head(acsdata$MAR) #marital status
-head(acsdata$MARHT) #number of times married
-head(acsdata$MARHYP) #year last married (bottom-coded)
-head(acsdata$SCHL) #educational attainment
-head(acsdata$FOD1P) #recoded Field of Degree (first entry)
-head(acsdata$FCITP) #citizenship
 
-#Work-related
-head(acsdata$JWMNP) #travel time to work
-head(acsdata$WKHP) #usual hours worked per week past 12 months
-head(acsdata$YOEP) #years of entry (bottom-coded)
-head(acsdata$INDP) #industry recode
-head(acsdata$NAICSP) #NAICS Indstry code
-head(acsdata$POWSP) #place of work
-
-#Origination
-head(acsdata$ANC1P) #first-reported ancestry
-head(acsdata$LANP) #language spoken at home
-head(acsdata$NATIVITY) #native or foreign born
-head(acsdata$POBP) #place of birth
-
-#Possible Dependent Variables
-head(acsdata$PERNP) #total person's earnings
-head(acsdata$PINCP) #total person's income
-head(acsdata$WAGP) #wages or salary income in past 12 months
-
-acs <- NULL
-myvars <- names(acsdata) %in% c("SERIALNO","ST","SPORDER","ADJINC","AGEP","QTRBIR","SEX","RAC1P","MAR","MARHT","MARHYP","SCHL","FOD1P","FCITP","JWMNP","WKHP","YOEP","INDP","NAICSP","POWSP","ANC1P","LANP","NATIVITY","POBP","WAGP","PERNP","PINCP")
-acs <- acsdata[myvars]
-
+```{r}
 #acs is the data set we will use for our analysis
 names(acs)
 nrow(acs)
@@ -131,6 +137,26 @@ hist(log(acs$PERNP))
 hist(log(acs$PINCP))
 
 hist(log(acs$PERNP), col = "blue", freq = FALSE, main="Histogram of Log of 2014 Total Personal Income", xlab="Log of Income", ylab="Qty") 
-lines(density(acs$PERNP), col = "red", lwd = 2) 
+
+#Create a dataset with all the complete cases.  
+acsComplete = acs[complete.cases(acs),]
+lines(density(acsComplete$PERNP), col = "red", lwd = 2) 
+```
+
+Detect variable correlations
+
+```{r}
+library(dplyr)
+library(reshape2)
+library(dummy)
+acsComplete = acs[complete.cases(acs),]
+acsComplete$NAICSP = NULL
+d_cor <- as.matrix(cor(acsComplete))
+d_cor_melt <- arrange(melt(d_cor), -abs(value))
+d_cor_melt = d_cor_melt[d_cor_melt$Var1 != d_cor_melt$Var2,]
+dplyr::filter(d_cor_melt, value > .5) # .5 is arbitrary
+
+
 
 ```
+
