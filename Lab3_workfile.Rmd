@@ -160,3 +160,29 @@ dplyr::filter(d_cor_melt, value > .5) # .5 is arbitrary
 
 ```
 
+
+```{r}
+############ RG
+library(lattice)
+library(car)
+
+hist(acsdata$AGEP, breaks=50)
+hist(log(acsdata$PINCP))
+
+plot(acsdata$PINCP~acsdata$AGEP)
+
+hist(log(acsdata$PINCP), col="red", breaks = 100, xlab = "Log(total person's income)", 
+     main = "Histogram - income distribution")
+
+#boxplot(pubdata[,1:2])
+
+xyplot(PINCP ~ AGEP, data=acsdata, 
+       auto.key=list(space="right"), 
+       jitter.x=TRUE, jitter.y=TRUE, xlab = "Total person's income", ylab = "State")
+
+boxplot(acsdata$PINCP~acsdata$RAC1P)
+scatterplot(PINCP~RAC1P, data=acsdata)
+
+boxplot(PINCP~SEX, names=c("Male","Female"), data =acsdata)
+
+```
