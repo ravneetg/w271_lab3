@@ -231,7 +231,6 @@ outlierKD(acs, series,label)
 descriptiveStats
 
 }
-makeFreqTable("AGEP")
 ```
 
 ## Possible Dependent Variables EDA
@@ -597,9 +596,9 @@ Other observations:
 ```{r}
 
 #Run these steps to clean up feature
-acs$ANC1P[acs$ANC1P == 999 ] <- NULL
-acs$ANC1P[acs$ANC1P == 0 ] <- NULL
-acs$ANC1P[acs$ANC1P == 996 ] <- NULL
+acs$ANC1P[acs$ANC1P == 999 ] <- NA
+acs$ANC1P[acs$ANC1P == 0 ] <- NA
+acs$ANC1P[acs$ANC1P == 996 ] <- NA
 
 runEDA("ANC1P")
 makeFreqTable("ANC1P")
