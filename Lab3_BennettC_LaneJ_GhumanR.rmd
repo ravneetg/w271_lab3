@@ -1,0 +1,1107 @@
+---
+title: "W271 - Section 1 Lab 3"
+author: "Chris Bennett, Jackson Lane, Ravneet Ghuman"
+date: "November 10, 2016"
+output: html_document
+---
+##W271 - Section 1 Lab 3
+
+##Predicting Income From 2014 American Community Survey Response Data
+
+###Table of Contents
+
+* Project Description
+    * Data Science Question
+    * Project Overview
+    * About The 2014 American Community Survey
+* Exploratory Data Analysis
+    * Observations On The Entire Data Set 
+    * Evaluation of Candidate Dependent Variables
+    * Evaluation of Candidate Independent Variables
+* Data Transformation
+* EDA of Transformed Variables
+* Model Development
+* Model Analysis
+    * Model Performance Evaluation
+    * Assumptions and Diagnostics
+    * Assumption Violation Remediation
+* Model Selection
+* Conclusion - How Does The Model Help Answer The Data Science Question
+
+##Project Description
+
+###Data Science Question
+
+How accurately can one predict a person's income by utilizing survey data related to [household
+costs, age of home, size of family, number of vehicles, occupation industry, language, location, and demographic attributes such as age, weight, education level and marital status?]
+
+Why we chose this question: In the marketing industry, knowing an individual's income is important for determining whether or not they will be likely to purchase an item (or service) of a specific amount. In many cases, consumers are willing to provide details around many aspects of their lives to surveys and warrantee forms, but they are less likely to provide their personal income.  We are approaching this survey to see if we can predict income by using potentially more readily available data (e.g. language spoken, education, commute time, work hours, et al).
+
+###Overview
+
+We utilized a portion of the 2014 American Community Survey data, as collected by the US. Census Bureau to conduct an OLS Multi-variate Linear Regression Analysis of survey data to predict a person's income (as self-reported in the same ACS survey data).
+
+The American Community Survey (ACS) is an annual survey that provides vital information on a
+yearly basis about our nation and its people. Information from the survey generates data that help
+determine how more than $400 billion in federal and state funds are distributed each year.
+Through the ACS, we know more about jobs and occupations, educational attainment, veterans,
+whether people own or rent their home, and other topics. Public officials, planners, and
+entrepreneurs use this information to assess the past and plan the future. When you respond to the
+ACS, you are doing your part to help your community plan hospitals and schools, support school
+lunch programs, improve emergency services, build bridges, and inform businesses looking to add
+jobs and expand to new markets, and more.
+
+The 2014 ACS Survey Data Dictionary can be found here: http://www2.census.gov/programs-surveys/acs/tech_docs/pums/data_dict/PUMSDataDict14.pdf
+
+The American Community Survey (ACS) is administered, processed, researched and disseminated
+by the U.S. Census Bureau within the U.S. Department of Commerce.
+
+##About the 2014 American Community Survey
+Prepared by American Community Survey Office - U.S. Census Bureau - October 27, 2015. The data used in this lab is referred to as the Public Use Microdata Sample (PUMS). The Public Use Microdata Sample (PUMS) contains a sample of actual responses to the American Community Survey (ACS). Each record in the file represents a single person, or--in the household-level dataset--a single housing unit. PUMS files for an individual year, such as 2014, contain data on approximately one percent of the United States population. PUMS files covering a five-year period, such as 2010-2014, contain data on approximately five percent of the United States population. 
+
+Since all ACS responses are strictly confidential, many variables in the PUMS files have been modified in order to protect the confidentiality of survey respondents. For instance, particularly high incomes are "top-coded," uncommon birthplace or ancestry responses are grouped into broader categories, and the PUMS files provide a very limited set of geographic variables (explained more below).
+
+We will explore the top-coding of the income variable more in the following sections of this paper.
+
+##Weights in PUMS
+
+The ACS PUMS is a weighted sample, and weighting variables must be used to generate accurate estimates and standard errors. The PUMS files include both population weights and household weights. Population weights should be used to generate statistics about individuals, and household weights should be used to generate statistics about housing units. The weighting variables are described briefly below.
+
+###PWGTP: Person's weight for generating statistics on individuals (such as age).
+###WGTP: Household weight for generating statistics on housing units and households (such as average household income).
+###WGTP1-WGTP80 and PWGTP1-PWGTP80: Replicate weighting variables, used for generating the most accurate standard errors for households or individuals.
+
+The analysis conducted in this paper excludes the use of any weighting, which does introduce potential bias into the exogeneity of the model results, but helps to simplify the data analysis for the purposes of this Lab Exercise.
+
+Some additional information on the survey's accuracy can be found at: http://www2.census.gov/programs-surveys/acs/tech_docs/pums/accuracy/2015AccuracyPUMS.pdf
+
+All technical documentation for the ACS data can be found at:
+http://www.census.gov/programs-surveys/acs/technical-documentation/pums/documentation.html
+
+```{r}
+
+#The following block of code loads the two survey files and concatenates them together
+
+library(psych)
+  library(dplyr)
+  library(plyr)
+library(corrplot)
+  library(reshape2)
+  library(gvlma)
+library(car)
+library(Hmisc)
+library(dummy)
+library(lattice)
+library(ggplot2)
+dev.off()
+rm(list=ls())
+#load RData file
+load("w271_lab3.Rproj.RData")
+
+# #Code to read data from input files included in case RData file not available
+# 
+# mydata = read.csv("input/ss14pusa.csv", header=TRUE)
+# mydatab = read.csv("input/ss14pusb.csv", header=TRUE)
+# 
+# names(mydata)
+# names(mydatab)
+# 
+# acsdata = rbind(mydata,mydatab)
+# 
+# nrow(mydata) + nrow(mydatab)
+# nrow(acsdata)
+# 
+# ls(acsdata)
+# describe(acsdata)  #list the variables and the labels for each
+# str(acsdata)       #list the variables, datatypes, and first few observations for each
+# names(acsdata)
+# 
+# summary(acsdata)
+
+```
+
+###Data features used for this study:
+ADJINC -- Adjustment factor for income and earnings dollar amounts. The value of ADJINC inflation-adjusts reported income to 2015 dollars and applies to FINCP and HINCP in the housing record.
+
+```{r}
+
+# #create a dataset that only has features of interest
+# 
+# #Survey/Respondant Identifier Info
+# head(acsdata$ST) #state Code
+# head(acsdata$SERIALNO) #household number
+# head(acsdata$SPORDER) #person number
+# head(acsdata$ADJINC) #adj factor for income
+# head(acsdata$PWGTP) #statistical weight used for generating stats on attributes like age
+# 
+# #Demographics
+# head(acsdata$AGEP) #age
+# head(acsdata$QTRBIR) #quarter of birth
+# head(acsdata$SEX) #gender
+# head(acsdata$RAC1P) #race
+# head(acsdata$MAR) #marital status
+# head(acsdata$MARHT) #number of times married
+# head(acsdata$MARHYP) #year last married (bottom-coded)
+# head(acsdata$SCHL) #educational attainment
+# head(acsdata$FOD1P) #recoded Field of Degree (first entry)
+# head(acsdata$FCITP) #citizenship
+# 
+# #Work-related
+# head(acsdata$JWMNP) #travel time to work
+# head(acsdata$WKHP) #usual hours worked per week past 12 months
+# head(acsdata$YOEP) #years of entry (bottom-coded)
+# head(acsdata$INDP) #industry recode
+# head(acsdata$NAICSP) #NAICS Indstry code
+# head(acsdata$POWSP) #place of work
+# 
+# #Origination
+# head(acsdata$ANC1P) #first-reported ancestry
+# head(acsdata$LANP) #language spoken at home
+# head(acsdata$NATIVITY) #native or foreign born
+# head(acsdata$POBP) #place of birth
+# 
+# #Possible Dependent Variables
+# head(acsdata$PERNP) #total person's earnings
+# head(acsdata$PINCP) #total person's income
+# head(acsdata$WAGP) #wages or salary income in past 12 months
+
+# acs <- NULL
+# myvars <- names(acsdata) %in% c("SERIALNO","ST","SPORDER","ADJINC","AGEP","QTRBIR","SEX","RAC1P","MAR","MARHT","MARHYP","SCHL","FOD1P","FCITP","JWMNP","WKHP","YOEP","INDP","NAICSP","POWSP","ANC1P","LANP","NATIVITY","POBP","WAGP","PERNP","PINCP")
+# acs <- acsdata[myvars]
+```
+
+
+Exploratory Data Analysis: 
+
+```{r}
+#EDA for entire data set
+ls(acs)
+names(acs)
+describe(acs)
+summary(acs)
+nrow(acs) #total rows
+ncol(acs) #total cols
+```
+
+```{r}
+#Correlation among variables - to identify relationships that warrant further investigation
+library(corrplot)
+M <- cor(acs)
+corrplot(M, method="circle")
+```
+
+
+EDA helper functions
+
+```{r}
+#OutlierKD script borrowed from Klodian Dhana at https://www.r-bloggers.com/identify-describe-plot-and-remove-the-outliers-from-the-dataset/
+#To detect the outliers I use the command boxplot.stats()$out which use the Tukey's method to identify the outliers ranged above and below the 1.5*IQR. To describe the data I preferred to show the number (%) of outliers and the mean of the outliers in dataset. I also show the mean of data with and without outliers. Regarding the plot, I think that boxplot and histogram are the best for presenting the outliers. In the script below, I will plot the data with and without the outliers. Finally, with help from Selva, I added a question (yes/no) to ask whether to keep or remove the outliers in data. If the answer is yes then outliers will be replaced with NA.
+
+outlierKD <- function(dt, var_name,label) {
+     na1 <- sum(is.na(var_name))
+     m1 <- mean(var_name, na.rm = T)
+     par(mfrow=c(2, 2), oma=c(0,0,3,0))
+     boxplot(var_name, main="With outliers")
+     hist(var_name, main="With outliers", xlab=NA, ylab=NA)
+     outlier <- boxplot.stats(var_name)$out
+     mo <- mean(outlier)
+     var_name <- ifelse(var_name %in% outlier, NA, var_name)
+     boxplot(var_name, main="Without outliers")
+     hist(var_name, main="Without outliers", xlab=NA, ylab=NA)
+     title(paste("Outlier Check",label), outer=TRUE)
+     na2 <- sum(is.na(var_name))
+     cat("Outliers identified:", na2 - na1, "n")
+     cat("Propotion (%) of outliers:", round((na2 - na1) / sum(!is.na(var_name))*100, 1), "n")
+     cat("Mean of the outliers:", round(mo, 2), "n")
+     m2 <- mean(var_name, na.rm = T)
+     cat("Mean without removing outliers:", round(m1, 2), "n")
+     cat("Mean if we remove outliers:", round(m2, 2), "n")
+#     response <- readline(prompt="Do you want to remove outliers and to replace with NA? [yes/no]: ")
+#     if(response == "y" | response == "yes"){
+#          dt[as.character(substitute(var))] <- invisible(var_name)
+#          assign(as.character(as.list(match.call())$dt), dt, envir = .GlobalEnv)
+#          cat("Outliers successfully removed", "n")
+#          return(invisible(dt))
+#     } else{
+#          cat("Nothing changed", "n")
+#          return(invisible(var_name))
+#     }
+}
+
+outlierRM <- function(dt, var) {
+     response <- readline(prompt="Do you want to remove outliers and to replace with NA? [yes/no]: ")
+     if(response == "y" | response == "yes"){
+          dt[as.character(substitute(var))] <- invisible(var_name)
+          assign(as.character(as.list(match.call())$dt), dt, envir = .GlobalEnv)
+          cat("Outliers successfully removed", "n")
+          return(invisible(dt))
+     } else{
+          cat("Nothing changed", "n")
+          return(invisible(var_name))
+     }
+}
+
+# Function to make a frequency table
+# Works better once variables are changed to named factors
+makeFreqTable = function(label){
+w = table(acs[[label]])
+x = ddply(acs,label,summarise,mean=mean(PINCP,na.rm=TRUE),sd=sd(PINCP,na.rm=TRUE))
+x = x[!is.na(x[[label]]),]
+t = as.data.frame(w)
+tt = as.data.frame(x)
+names(t)[1] = label
+names(t)[2] = 'Freq'
+ttt <- cbind(t,tt[,-1])
+j <- cbind(ttt,round(ttt$Freq/length(acs[[label]])*100,2))
+names(j)[5] = 'Perc'
+return(head(j[order(-j$Perc),],20))
+}
+
+#Creates a scatterplot of variable versus PINCP
+#Pull a random sample and scatterplot to see if there are differences in income by category
+
+makeScatterPlot = function(label){
+acs2 <- acs[sample(1:nrow(acs), 50000, replace=FALSE),c(label,"PINCP")]
+series = acs2[[label]]
+scatterplot( series,acs2$PINCP, main=paste("Scatterplot of PINCP over",label),xlab=label,ylab="PINCP")
+}
+
+#Generic EDA function.
+runEDA = function(label){
+  series = acs[[label]]
+print(summary(series))
+print(describe(series))
+descriptiveStats = t(data.frame("Number of zero values"=sum(series == 0,na.rm=T),
+                          "Number of NA values" = sum(is.na(series)),
+                          "Number of non-zero, non-NA values" = sum(series > 0,na.rm = T),
+                          "Number of Unique values" = length(unique(series))
+                          ))
+if(is.numeric(series)){
+outlierKD(acs, series,label)
+  }
+
+descriptiveStats
+
+}
+```
+
+## Possible Dependent Variables EDA
+
+NOTE: It is suggested in the ACS Survey Documentation that we use ADJINC to adjust PERNP, PINCP, and WAGP to constant dollars at 2014 value. We have chosen not to make this adjustment for the sake of this analysis, as their relative values to the independent variables is our need in developing the most accurate and predictive value possible. Additionally, this adjustment factor has the same value for all records, which further indicates it will have no impact (positive or negative) on our model development.
+
+1.) PERNP - Total Person's Earnings
+
+Description of this field: Total Person's Earnings
+
+bbbbbbb          .N/A (less than 15 years old)
+0000000          .No earnings
+-010000          .Loss of $10000 or more (Rounded & bottom-coded .components)
+-000001..-009999 .Loss $1 to $9999 (Rounded components)
+0000001          .$1 or break even
+0000002..9999999 .$2 to $9999999 (Rounded & top-coded components)
+
+EDA on PERNP:
+
+* NAs: 581,723
+* Mean: 28,300
+* Median: 10,000
+* Min: -8,500
+* Max: 1,030,000
+* Zero values: 1,539,488
+* Number of Unique Values: 5,060
+* Number of non-NA, non-zero values: 2,550,887
+* Distribution: Non-normal distribution with a very positive skew
+
+2.) PINCP - Total person's income (signed)
+
+Description of this field: Total person's income (signed)
+
+bbbbbbb          .N/A (less than 15 years old)
+0000000          .None
+-019999          .Loss of $19999 or more (Rounded & bottom-coded components)
+-000001..-019998 .Loss $1 to $19998 (Rounded components)
+0000001          .$1 or break even
+0000002..9999999 .$2 to $9999999 (Rounded & top-coded components)
+
+EDA on PINCP:
+
+* NAs: 541,687
+* Mean: 36,500
+* Median: 21,500
+* Min: -13,000
+* Max: 1,400,000
+* Zero values: 881,976
+* Number of Unique Values: 19,622
+* Number of non-NA, non-zero values: 2,590,923 <- Double check this...
+* Distribution: Non-normal with a very positive skew
+
+3.) WAGP - Wages or Salary Income Past 12 Months
+
+Description of this field: Wages or Salary Income Past 12 Months
+
+bbbbbb          .N/A (less than 15 years old)
+000000          .None
+000001..999999  .$1 to 999999 (Rounded and top-coded)
+
+EDA on WAGP:
+
+* NAs: 541,687
+* Mean: 26,100
+* Median: 6,000
+* Min: 0
+* Max: 642,000
+* Zero values: 1,636,095
+* Number of Unique Values: 912
+* Number of non-NA, non-zero values: 2,590,923
+* Distribution: Non-normal with a very positive skew
+
+Conclusion:
+
+Note: due to similarities of WAGP and PINCP, while the documentation doesn't describe one as being a product of the other, it appears that that was likely the case.  The attributes of these two variables do differ in some ways, so we're just noting the similarities and proceeding with caution as we select one feature to be our primary independent variable.
+
+Upon inspection, PINCP has the fewest number of zero values, is tied for the fewest NA's, and has by far the most unique values. Given these characteristics, PINCP would make the most sense as the Dependent Variable for this model.
+
+Possible Transformations:
+
+Because the distribution of PINCP is so concentrated on lower values and has a strong positive skew, we will evaluate models utilizing both a log transform of PINCP, as well as the raw value of PINCP.  Also, since we can only predict values with PINCP, we will reduce the dataset to only include records with a non-NA value in the PINCP variable. This will give us a maximum dataset size of 2,590,923
+
+###PERNP: total person's earnings
+
+```{r}
+runEDA("PERNP")
+
+```
+
+###PINCP: Total person's income
+
+```{r}
+
+runEDA("PINCP") 
+
+```
+
+###WAGP: Total person wages/salary
+
+```{r}
+runEDA("WAGP")
+```
+
+
+
+For the remainder of our analysis, we will compare the independent variables to the chosen PINCP dependent varialbe.
+
+##Survey/Respondant Identifier Info EDA
+
+###ST: state
+```{r}
+
+runEDA("ST")
+makeFreqTable("ST")
+makeScatterPlot("ST")
+```
+
+
+### POWSP: Place of work - State or foreign country recode
+
+```{r}
+runEDA("POWSP")
+
+makeFreqTable("POWSP")
+makeScatterPlot("POWSP")
+
+# Percentage of people working in the US
+(table(acs$POWSP<=56)[2]/sum(table(acs$POWSP<=56)))*100
+
+# Since there could be other confounding variables that influence income
+# for outside US employments, so we should exclude those records
+```
+
+###review SERIALNO: Unique ID
+```{r}
+summary(acs$SERIALNO)
+# Unique ID
+```
+
+
+###SPORDER: person number
+```{r}
+runEDA("SPORDER")
+
+```
+
+Seq number for uniqueness (used alongside serialno).  Not useful in regression
+
+
+###ADJINC: Adjusted Income factor
+```{r}
+runEDA("ADJINC")
+```
+
+This is actually 1008425 for all of the records.  It becomes useful when comparing across multiple years and adjusting for inflation, but in this cross sectional data, it can be ignroed
+
+
+## Demographics EDA
+
+###AGEP: Age of person
+
+```{r}
+runEDA("AGEP")
+makeFreqTable("AGEP")
+makeScatterPlot("AGEP")
+```
+
+###QTRBIR: Quarter of birth
+
+```{r}
+runEDA("QTRBIR")
+makeFreqTable("QTRBIR")
+makeScatterPlot("QTRBIR")
+```
+
+###SEX: Male or Female
+
+```{r}
+runEDA("SEX")
+makeFreqTable("SEX")
+makeScatterPlot("SEX")
+```
+
+
+###MAR: Marital status
+
+```{r}
+runEDA("MAR")
+makeFreqTable("MAR")
+makeScatterPlot("MAR")
+```
+
+###MARHT: Number of times married
+
+```{r}
+runEDA("MARHT")
+makeFreqTable("MARHT")
+makeScatterPlot("MARHT")
+```
+
+
+###MARHYP: Years married
+
+```{r}
+runEDA("MARHYP")
+makeFreqTable("MARHYP")
+makeScatterPlot("MARHYP")
+```
+
+
+###SCHL: Years of Schooling
+
+```{r}
+runEDA("SCHL")
+makeFreqTable("SCHL")
+makeScatterPlot("SCHL")
+```
+
+###FOD1P: Field of degree - first entry
+
+```{r}
+runEDA("FOD1P")
+makeFreqTable("FOD1P")
+makeScatterPlot("FOD1P")
+```
+
+
+###FCITP: Citizenship allocation flag
+
+```{r}
+runEDA("FCITP")
+makeFreqTable("FCITP")
+makeScatterPlot("FCITP")
+```
+
+It looks like there is a difference in income with regard to this variable, but since only 6% of the sample population has this flag, it's value is limited.  
+
+## Work-related EDA
+  *JWMNP: travel time to work                        # park it for analysis
+  *WKHP: usual hours worked per week past 12 months  # Include in analysis
+  *YOEP: years of entry (bottom-coded)               # didn't understand
+  *INDP: industry recode                             # include in analysis
+  *NAICSP: NAICS Indstry code                        # one to one mapping with INDP
+  *POWSP:place of work                              # exclude non-US data
+
+###JWMNP: travel time to work
+```{r}
+runEDA("JWMNP")
+makeFreqTable("JWMNP")
+makeScatterPlot("JWMNP")
+# Percentage of people with commute less than 10 mins
+(table(acs$JWMNP<=10)[2]/sum(table(acs$JWMNP<=10)))*100
+
+# Percentage of people with commute less than 20 mins
+(table(acs$JWMNP<=20)[2]/sum(table(acs$JWMNP<=20)))*100
+
+# Percentage of people with commute less than 30 mins
+(table(acs$JWMNP<=30)[2]/sum(table(acs$JWMNP<=30)))*100
+
+##N/A (not a worker or worker who worked at home
+```
+
+
+###WKHP: Usual hours worked per week past 12 months
+
+N/A (less than 16 years old/did not work .during the past 12 months)
+```{r}
+runEDA("WKHP")
+makeFreqTable("WKHP")
+makeScatterPlot("WKHP")
+
+# Percentage of people working 20 hrs or less
+(table(acs$WKHP<=20)[2]/sum(table(acs$WKHP<=20)))*100
+
+# Percentage of people working 40 hrs
+(table(acs$WKHP==40)[2]/sum(table(acs$WKHP==40)))*100
+
+# Percentage of people working more than 40 hrs
+(table(acs$WKHP>40)[2]/sum(table(acs$WKHP>40)))*100
+
+```
+
+###YOEP: Years of entry
+
+```{r}
+runEDA("YOEP")
+makeFreqTable("YOEP")
+makeScatterPlot("YOEP")
+```
+
+Note that this variable is bottom coded.  People who entered before 1920 are still coded as 1920.  
+Parking this attribute for now
+
+
+###INDP: industry recode
+eg:
+  *7860 .EDU-ELEMENTARY AND SECONDARY SCHOOLS
+  *0770 .CON-CONSTRUCTION, INCL CLEANING DURING AND IMM AFTER
+  *8680 .ENT-RESTAURANTS AND OTHER FOOD SERVICES
+```{r}
+runEDA("INDP")
+makeFreqTable("INDP")
+makeScatterPlot("INDP")
+```
+
+###NAICSP: NAICS Indstry code
+eg:
+  *6111 .EDU-ELEMENTARY AND SECONDARY SCHOOLS
+  *23 .CON-CONSTRUCTION, INCL CLEANING DURING AND IMM AFTER
+
+```{r}
+runEDA("NAICSP")
+```
+
+Since NAICSP has one to one correspondence to INDP, we only need to use one of them
+
+Detect variable correlations
+
+```{r}
+library(dplyr)
+library(reshape2)
+acsComplete = acs[complete.cases(acs),]
+acsComplete$NAICSP = NULL
+d_cor <- as.matrix(cor(acsComplete))
+d_cor_melt <- arrange(melt(d_cor), -abs(value))
+d_cor_melt = d_cor_melt[d_cor_melt$Var1 != d_cor_melt$Var2,]
+dplyr::filter(d_cor_melt, value > .5) # .5 is arbitrary
+
+
+
+```
+
+
+
+## Origination/Locale Features EDA
+
+###ANC1P: First-reported Ancestry
+
+* 999 - Not Reported (14.9%)
+* 032 - German (11%)
+* 902 - African American (6.8%)
+* 50  - Irish (6.7%)
+* 939 - American (6.4%)
+* 22  - English (5.9%)
+* 210 - Mexican (5.8%)
+* 51  - Italian (4.3%)
+* 924 - White (3.4%).
+* 142 - Polish (2%)
+* 26  - French (1.5%)
+* 996 - Uncodable Entries (1.3%) *Should be Corrected to NA's
+* 88  - Scottish (1.2%)
+* 706 - Chinese (1.1%)
+* 82  - Norwegian ( 1.1%)
+* 195 - European (1%) *We might want to recode all European's?
+* 920 - American Indian (1%)
+
+Other observations:
+* There are 467,439 records that are "Not Reported" (999), these should coded to NA's if we use this feature.
+* There are 27 zero values - although there is no coded value for zero. These should be removed if we use this feature.
+* There are 39,969 values which code to "Uncodable Entries". These should be removed if we use this feature.
+* There are 0 values coded as NA
+
+```{r}
+
+#Run these steps to clean up feature
+acs$ANC1P[acs$ANC1P == 999 ] <- NA
+acs$ANC1P[acs$ANC1P == 0 ] <- NA
+acs$ANC1P[acs$ANC1P == 996 ] <- NA
+
+runEDA("ANC1P")
+makeFreqTable("ANC1P")
+makeScatterPlot("ANC1P")
+```
+
+###LANP: Language Spoken at Home
+
+Description: Language Spoken at Home. The coded values represent a list of different languages.  The N/A values represent less than 5 years old/speaks only english.
+
+Top results by frequency of language type
+
+* 625 - Spanish (10%)
+* 708 - Chinese (0.64%)
+* 742 - Tagalog (0.54%)
+* 728 - Vietnamese (0.43%)
+* 620 - French (0.36%)
+* 607 - German (0.34%)
+* 724 - Korean (0.32%)
+
+Other observations:
+
+* 538,436 Has a value
+* 2,594,174 Has a N/A
+
+Conclusions:
+
+This is not a great variable because only 17% have values other than NA.  Additionally, the fact that they combined two scenarios (under 5 y/o and english only) by combining them both into the NA value is problematic for the problem I am trying to solve.
+
+```{r}
+runEDA("LANP")
+makeFreqTable("LANP")
+makeScatterPlot("LANP")
+
+j = makeFreqTable("LANP")
+
+#Sort by mean income
+head(j[order(-j$mean),],20)
+
+
+
+```
+
+###NATIVITY: Native or Foreign Born
+
+Description: Native or Foreign Born (Nativity)
+ 1   - Native
+ 2   - Foreign Born
+
+Observations
+
+* All records have a value, no NA's present.
+* 2,771,933 - Native (88%)
+* 360,677   - Foreign Born (12%)
+* The mean and standard deviation of PINCP (income) for the two values is very close, which raises questions about how useful this variable will be in predicting income.
+
+```{r}
+runEDA("NATIVITY")
+makeFreqTable("NATIVITY")
+makeScatterPlot("NATIVITY")
+
+```
+
+###POBP: Place of Birth
+
+Description: Place of Birth
+
+Top returned Places of Birth
+
+* 6  - California (8.5%)
+* 36 - New York (6.7%)
+* 48 - Texas (6.1%)
+* 42 - Pennsylvania (4.6%)
+* 17 - Illinois (4.3%)
+* 39 - Ohio (4.1%)
+* 26 - Michigan (3.4%)
+* 303 - Mexico (3%)
+
+Observations:
+
+* There are no NA values
+* There are several coded values for a very generic 'catch all' (i.e. 399 = Americas, not specified)
+* Therppears to be good distribution of values for this variable, looks like a good candidate variable for the regression model.
+
+```{r}
+runEDA("POBP")
+makeFreqTable("POBP")
+makeScatterPlot("POBP")
+
+#Sort by mean income
+j = makeFreqTable("POBP")
+head(j[order(-j$mean),],20)
+
+```
+
+
+#Variable Transformations:
+
+After performing EDA on the raw dataset, we decided on the following actions:
+
+* PINCP: Dependent variable.  Transform with Log
+* POWSP: Independent variable.  Transform to binary - US/Non-US
+* POBP: Independent variable.  Transform to binary - US/Non-US
+* AGP: Independent variable.  Bucket by decade
+* SEX: Independent variable. 
+* MAR: Independent variable.  Transform to categorical
+* SCHL: Independent variable  Bucket by (No schooling, Some Highschool, GED, Associates Degree, Bachelors Degree, Masters Degree or higher)
+* INDP: Independent variable  Transform to categorical
+* ANC1P: Independent variable  Transform to categorical
+* LANP: Independent variable  Bucket by (English, Spanish, Other buckets)
+* FCITP: Independent variable
+* JWMNP: Independent variable
+* WKHP: Independent variable
+
+##
+
+
+##Filters
+This section applies filters on
+a) records that have an income of 0 or NA
+b) records that have age <15 (as by default younger than 15 have no reported income in the dataset)#rg
+
+```{r}
+acs <- acs[acs$PINCP > 0,]
+acs <- acs[!is.na(acs$PINCP),]
+acs = acs[acs$AGEP>=15,]#rg
+```
+
+```{r}
+getOnlyHighDev = function(data,label,n=1){
+  meanIncome = mean(data$PINCP_log,na.rm = T)
+sdIncome = sd(data$PINCP_log,na.rm=T)
+meanIncomeByLabel = ddply(data,label,summarise,mean=mean(PINCP_log,na.rm=TRUE),sd=sd(PINCP_log,na.rm=TRUE))
+highDevCategories = meanIncomeByLabel[abs(meanIncomeByLabel$mean-meanIncome) > meanIncomeByLabel$sd*n,label]
+result = factor(data[[label]],highDevCategories)
+return(addNA(result))
+}
+```
+
+
+```{r}
+
+########################################
+#Data Transformation for PINCP         #
+########################################
+
+
+acsTransformed <- data.frame(PINCP_log = log(acs$PINCP))
+
+#Select a sample of the population to test everything on
+#Note: Recode all transformation steps against full dataset once finalized
+par(mfrow=c(1,1))
+hist(acsTransformed$PINCP_log)
+
+########################################
+#Data Transformation for AGEP          #
+########################################
+acsTransformed$AGEP = acs$AGEP
+hist(acsTransformed$AGEP)
+summary(acsTransformed$AGEP)
+describe(acsTransformed$AGEP)
+length(na.omit(acsTransformed$POBP != 0))
+
+# set starting age as 15 as records with age 14 or lower were filtered out
+acsTransformed$AGEP_bin <- cut(acs$AGEP, c(15, 20, 30, 40, 50, 60, 70, 80, 90, 100))
+acs$AGEP_bin <- cut(acs$AGEP, c(15, 20, 30, 40, 50, 60, 70, 80, 90, 100))#rg
+
+table(acsTransformed$AGEP_bin)
+
+###MAR####
+
+acsTransformed$MAR = factor(acs$MAR)
+levels(acsTransformed$MAR) = c("Married","Widowed","Divorced","Separated","Not Married")
+
+acs$MAR_bin = factor(acs$MAR)#rg
+levels(acs$MAR_bin) = c("Married","Widowed","Divorced","Separated","Not Married")#rg
+
+
+###########################################################
+#Data Transformation for SCHL (Years of School Completed) #
+###########################################################
+
+par(mfrow=c(1,1))
+acsTransformed$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 13, 16, 20, 22, 24)))
+acs$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 13, 16, 20, 22, 24))) #rg
+table(acsTransformed$SCHL_bin)
+
+ggplot(acsTransformed, aes(x=SCHL_bin)) + xlim(0,7) + geom_bar(stat="count", fill="#0072B2", colour="black") + ggtitle("Years of School")
+
+##############################################
+#Data Transformation for FCITP (Citizenship) #
+##############################################
+
+acsTransformed$FCITP= acs$FCITP
+summary(acsTransformed$FCITP)
+length(na.omit(acsTransformed$FCITP != 0))
+hist(acsTransformed$FCITP)
+
+######################################################
+#Data Transformation for JWMNP (Travel Time to Work) #
+######################################################
+
+acsTransformed$JWMNP= acs$JWMNP
+acsTransformed$JWMNP[is.na(acs$JWMNP)] = 0
+summary(acsTransformed$JWMNP)
+length(na.omit(acsTransformed$JWMNP != 0))
+length(acsTransformed$JWMNP[acsTransformed$JWMNP==0])
+hist(acsTransformed$JWMNP)
+
+######################################################
+#Data Transformation for WKHP (Hours Worked per Week) #
+######################################################
+acsTransformed$WKHP= acs$WKHP
+acsTransformed$WKHP[is.na(acs$WKHP)] = 0
+summary(acsTransformed$WKHP)
+length(na.omit(acsTransformed$WKHP != 0))
+hist(acsTransformed$WKHP)
+
+######################################################
+#Data Transformation for INDP:  #
+######################################################
+acsTransformed$INDP = factor(acs$INDP)
+acsTransformed$INDP = addNA(acsTransformed$INDP)
+summary(acsTransformed$INDP)
+plot(acsTransformed$INDP)
+
+
+######################################################
+#Data Transformation for LANP (Language Spoken)      #
+######################################################
+
+acsTransformed$LANP_bin = "Non-English, Non-Spanish"
+
+acsTransformed$LANP_bin[is.na(acs$LANP)] <- "English"
+acsTransformed$LANP_bin[acs$LANP == 625] <- "Spanish"
+acsTransformed$LANP_bin = factor(acsTransformed$LANP_bin)
+
+######################################################
+#Data Transformation for ANC1P (Ancestry)            #
+######################################################
+
+acsTransformed$ANC1P = factor(acs$ANC1P)
+acsTransformed$ANC1P = addNA(acsTransformed$ANC1P)
+
+length(is.null(acsTransformed$ANC1P))
+summary(acsTransformed$ANC1P)
+
+######################################################
+#Data Transformation for POBP (Place of Birth)       #
+######################################################
+
+acsTransformed$POBP_US = acs$POBP < 72 #changed from 73 to 72 #rg
+
+######################################################
+#Data Transformation for POWSP (Place of Work)       #
+######################################################
+
+acsTransformed$POWSP_US = acs$POWSP < 72 #changed from 73 to 72 #rg
+# filter so that place of work is in US 
+# (as there could be other confounding variables that affect international income)
+
+```
+
+
+##Model training
+
+##Split into training and test data
+```{r}
+
+
+acs.testdata=acs[sample(nrow(acs), 100,replace=FALSE), ]
+acs.small.testdata=acs.testdata[sample(nrow(acs.testdata), 30,replace=FALSE), ]
+acs.trainingdata = anti_join(acs, acs.testdata, by =c("SERIALNO","SPORDER"))
+
+# test to make sure test data + training data = full dataset
+nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
+
+# acspull <- acssmall[sample(1:nrow(acs), 500000, replace=FALSE),]#rg
+# 
+# head(acssmall)#rg
+# nrow(acssmall)#rg
+# 
+# acspull <- acssmall[sample(1:nrow(acssmall)), ]#rg
+# 
+# acsmod <- head(acspull,140000)#rg
+# acstest <- tail(acspull,5000)#rg
+
+modtest = lm(log(PINCP) ~ factor(AGEP_bin) + factor(SCHL_bin) + JWMNP + WKHP,data=acs.trainingdata)#rg
+summary(modtest)
+
+plot(modtest)
+
+#predictions = predict(lm(log(PINCP) ~ factor(AGEP_bin) + factor(SCHL_bin) + JWMNP + WKHP + 
+#factor(INDP), acstest)) #rg
+
+#### code for predictions
+predictions = predict.lm(modtest,acs.testdata,se.fit = FALSE, interval = "confidence" )#rg
+
+### view side by side
+head(cbind(predictions,log(acs.testdata$PINCP)))#rg
+
+acs.testdata$fit=as.vector(predictions[,1])#rg
+acs.testdata$lwr=as.vector(predictions[,2])#rg
+acs.testdata$upr=as.vector(predictions[,3])#rg
+acs.testdata$lPINCP=log(acs.testdata$PINCP)#rg
+
+plot.data=(acs.testdata[c("lPINCP","fit","lwr","upr")])#rg
+plot.data=plot.data[complete.cases(plot.data),]#rg
+plot(log(plot.data$PINCP), type = "l",col="red")#rg
+lines(plot.data$fit,col="green")#rg
+head(plot.data)#rg
+
+#lines(plot.data$upr,col="blue")
+#lines(plot.data$lwr,col="blue")
+
+(meanDiff <- mean(log(acstest$PINCP) - predictions))
+
+predictions = predict(lm(log(PINCP) ~ WKHP, acstest))
+(meanDiff <- mean(log(acstest$PINCP) - predictions))
+
+```
+
+##Model Assumptions and Diagnostics
+
+###Overall Observations on Statistical Validity of the Model
+
+The survey applies adjustments for several variables collected in the survey to weight the data in order to better resemble a nationally representative sample. This means that the ACS data is fundamentally biased, and may not be portrayed as fully accurate, exogenous tool. The weight values were present in the data set for some of the variables, but were not used for this analysis.
+
+While some variables were reported as being top or bottom-coded, our analysis showed that the number of impacted records was very small, and deemed to be not significantly impactful to the model results as their frequency was minimal.
+
+And while many income values in survey data are categorical, the ACS treats this variable as an ordinal feature, making it much more conduscive for OLS regression analysis.
+
+###1.) Random Sampling
+
+From the Census Bureau literature: (https://www.census.gov/content/dam/Census/programs-surveys/acs/about/ACS_Information_Guide.pdf)
+
+The Census Bureau selects a random sample of addresses to be included in the ACS. Each address has about a 1-in-480 chance of being selected in a month, and no address should be selected more than once every 5 years. The Census Bureau mails questionnaires to approximately 295,000 addresses a month across the United States. This is a small number of households considering there are more than 180 million addresses in the United States and an address that receives ACS instructions will not likely fi nd a neighbor or friend who has also received them.
+
+Observations:
+
+The Census Bureau randomly selects its list of addresses from the US Postal Service, which is known for being quite complete and accurate. However, error and omissions do exists, specifically (but not limited to) new homes, seasonal dwellings, and for transient or homeless individuals.  But note that to address this last source of error, the Census Bureau does send surveys to group homes. Another source of error is that this data is obviously only available for compliant sample subjects who complete the information completely and accurately.  While this assumption is helped by the fact that this survey is mandated by law, it is possible that compliance rates may be lower for certain communities.
+
+###Linearity in Parameters
+
+[The model violates the assumption of linearity in parameters as can be seen in the plot of the residuals against the fitted values. The remediate for this is to look at transformations for the contributing parameters (AGE) and to include additional interaction terms for ...]
+
+###No Perfect Collinearity
+
+Explained as, in the sample (and therefore in the population), the assumption is that none of the independent variables are constant and there are no exact relationships among the independent variables. While this assumption only rules out perfect collinearity/correlation between explanatory variables, imperfect correlation is allowed. In practice, high correlation can greatly increase errors.
+
+Observations:
+
+[The following explanatory variables appear to have high correlation... Constant variables are also ruled out, as they are collinear with the intercept term. To remediate this, the following variables  will be eliminated. ] 
+
+###Mean of error term is zero (zero conditional mean)
+
+Explained as, even if we look at a specific value of x, we still expect errors to average to zero. The explanatory variable must not contain information about the mean of ANY unobserved factors. This isn't a strong assumption, because we could always change $$ \beta_0  $$ to move our line up or down so that the mean error is zero. If the errors had a common nonzero mean, and you fitted a least square model, it would be absorbed by the constant, and the residuals would on average be zero. So you can't test whether the residuals have a common mean that's not zero. What you can check is whether the residuals (and by implication the errors that they estimate) have constant mean; on average they're still zero, but conditionally they may have means some distance from zero.
+
+Observations:
+
+The Residuals Vs. Fitted plot as a loess smooth superimposed, but without the curve you can still discern that ... [i.e. the points tend to sit above the zero line at each end and perhaps below it in the middle. You can immediately see that the linearity assumption is somewhat suspect, and that perhaps some curved relationship is present.]
+
+[By utilizing a log transformation of the dependent variable, PINP, we are able to show a more linear relationship betweent the predictors and the dependent variable.]
+
+[If we can't meet the Assumption of Zero Conditional Mean, we might be able to meet the weaker assumption of exogeneity.]
+
+###Omitted Variable Bias
+
+This model violoates the zero conditional mean assumption with respect to omitted variable bias because of the lack of several features that are likely represented in the error term, including: wealth and education of parents, what their lifestyle costs (thrifty?), or how they choose to live or spend their money, income in previous years (that may have provided adequate funds for subsequent years), and other living expenses...as well as many others. This indicates that the model's estimates could be biased due to omitting several potentially important variables.
+
+###Exogeneity
+
+Because of the large size of our dataset, exogeneity is a critical assumption. We tested that the explanatory variables are uncorrelated with the error term (called exogenity). If $$ \x_j $$ is exogenous, $$ Cov(\x_j,u)=0 $$
+
+###Homoskedasticity - Variance of error term is constant
+
+The error term can't vary more for some values of our predictor variables than others, otherwise stated as the values of the explanatory variables must contain no information about the variability of the error. This is a strong assumption.
+
+[The null hypothesis of homoskedasticity specified in the *Breusch-Pagan* test is rejected.]
+
+[The QQ plot shows some evidence of heteroskedasticity. The distribution of the residuals was nearly normal with some positive skew, further indicating possible heteroskedasticity. The residual vs. fitted plot confirms this by showing non-even distribution of variance.]
+
+[Remediation for Heteroskedasticity is to utilize heteroskedasticity-robust tools such as the White standard errors.]
+
+[The QQ plot shows some evidence of heteroskedasticity. The distribution of the residuals was nearly normal with some positive skew, further indicating possible heteroskedasticity.]
+
+###Normality of error term:
+
+[Due to the (very) large sample size, small deviations from the assumption of a normal distribution of error terms do not necessarily negate the statistical significance of tests that require this assumption. Our model does show significant deviations in the normality of the error term, which we attempted to reduce the effects by using robust tools (i.e F-test), as well as by transforming the [XXX] variables.]
+
+###Other sources of bias or error:
+
+The data is also collected at a person and household level. When a survey reaches a household, each person living in the household is asked to complete the form. It is likely that there may be more similarities than differences among individuals living together. Also, we chose the income person's income as the dependent variable because household income was not readily available for analysis.  This could introduce some bias in that certain people are likely benefiting from their partner's income, therefore their lifestyle-related survey responses may not be reflective of their personal income.
+
+```{r}
+
+#PLACE INITIAL MODELS HERE
+mod0 <- 
+mod1 <- 
+mod2 <- 
+
+#Utilize White Standard Error because of evidence of Heteroskedasticity
+mod0_robust <- coeftest(model0, vcov = vcovHC)
+mod1_robust <- coeftest(model1, vcov = vcovHC)
+mod2_robust <- coeftest(model2, vcov = vcovHC)
+
+stargazer(mod0_robust, mod1_robust, mod2_robust, type = "text")
+
+#Evaluate if there is any difference between the different models we generated
+waldtest(mod0, mod1)
+waldtest(mod1, mod2)
+
+#Pick best model and run majority of diagnostics on that model (which will be named mod0)
+
+#Model Assumption Diagnostics Plots
+plot(mod0)
+residualPlots(mod0)
+
+#Evaluate serial correlation of the residuals
+plot(mod0$residuals, main="Autocorrelation Function of Model Residuals")
+acf(0$residuals, main="Autocorrelation Function of Model Residuals")
+
+#Correlation among variables - to identify relationships that warrant further investigation
+library(corrplot)
+M <- cor(acs)
+corrplot(M, method="circle")
+
+shapiro.test(mod0$residuals)
+
+#Breusch-Pagan Test for Homoskedasticity
+bptest(mod0)
+
+par(mfrow=c(1,1))
+hist(mod0$residuals)
+qqnorm(mod0$residuals)
+qqline(mod0$residuals)
+scatterplot(mod0$fitted.values, mod0$residuals, smoother = loessLine, cex = 0.5, pch = 19,    smoother.args = list(lty = 1, lwd = 5))
+
+#Exogeneity
+exo_mod1 <- lm(mod0$residuals ~ acs$AGEP)
+exo_mod2 <- lm(mod0$residuals ~ acs$VAR2)
+exo_mod3 <- lm(mod0$residuals ~ acs$VAR3)
+exo_mod4 <- lm(mod0$residuals ~ acs$VAR4)
+exo_mod5 <- lm(mod0$residuals ~ acs$VAR5)
+
+summary(exo_mod1)
+summary(exo_mod2)
+summary(exo_mod3)
+summary(exo_mod4)
+summary(exo_mod5)
+
+```
+
+
