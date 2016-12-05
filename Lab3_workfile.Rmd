@@ -899,8 +899,33 @@ acsTransformed$POWSP_US = acs$POWSP < 73
 
 ```
 
-#Model training
+##Model training
 
+```{r}
+
+acspull <- acssmall[sample(1:nrow(acs), 500000, replace=FALSE),]
+
+head(acssmall)
+nrow(acssmall)
+
+acspull <- acssmall[sample(1:nrow(acssmall)), ]
+
+acsmod <- head(acspull,140000)
+acstest <- tail(acspull,5000)
+
+modtest = lm(log(PINCP) ~ factor(AGEP_bin) + factor(SCHL_bin) + JWMNP + WKHP + factor(INDP),data=acsmod)
+summary(modtest)
+
+plot(modtest)
+
+predictions = predict(lm(log(PINCP) ~ factor(AGEP_bin) + factor(SCHL_bin) + JWMNP + WKHP + 
+factor(INDP), acstest))
+(meanDiff <- mean(log(acstest$PINCP) - predictions))
+
+predictions = predict(lm(log(PINCP) ~ WKHP, acstest))
+(meanDiff <- mean(log(acstest$PINCP) - predictions))
+
+```
 
 ##Model Assumptions and Diagnostics
 
