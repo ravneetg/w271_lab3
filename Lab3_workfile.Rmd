@@ -38,7 +38,7 @@ http://www.census.gov/programs-surveys/acs/technical-documentation/pums/document
 library(psych)
   library(dplyr)
   library(plyr)
-
+library(corrplot)
   library(reshape2)
   library(gvlma)
 library(car)
@@ -128,16 +128,21 @@ Exploratory Data Analysis:
 
 ```{r}
 #EDA for entire data set
-
 ls(acs)
 names(acs)
 describe(acs)
 summary(acs)
 nrow(acs) #total rows
 ncol(acs) #total cols
-
-
 ```
+
+```{r}
+#Correlation among variables - to identify relationships that warrant further investigation
+library(corrplot)
+M <- cor(acs)
+corrplot(M, method="circle")
+```
+
 
 EDA helper functions
 
@@ -577,7 +582,7 @@ dplyr::filter(d_cor_melt, value > .5) # .5 is arbitrary
 * 22  - English (5.9%)
 * 210 - Mexican (5.8%)
 * 51  - Italian (4.3%)
-* 924 - White (3.4%)
+* 924 - White (3.4%).
 * 142 - Polish (2%)
 * 26  - French (1.5%)
 * 996 - Uncodable Entries (1.3%) *Should be Corrected to NA's
@@ -693,3 +698,155 @@ j = makeFreqTable("POBP")
 head(j[order(-j$mean),],20)
 
 ```
+
+
+#Variable Transformations:
+
+After performing EDA on the raw dataset, we decided on the following actions:
+
+* PINCP: Dependent variable.  Transform with Log
+* POWSP: Independent variable.  Transform to binary - US/Non-US
+* AGP: Independent variable
+* SEX: Independent variable.  Transform to binary
+* MAR: Independent variable.  Transform to categorical
+* MARHT: Conditional: Transform NA values to 0, check correaltion with MAR
+* MARHYP:
+
+##
+
+##Filter
+```{r}
+acs <- acs[acs$PINCP > 0,]
+acs <- acs[!is.na(acs$PINCP),]
+```
+
+
+
+```{r}
+getOnlyHighDev = function(data,label,n=1){
+  meanIncome = mean(data$PINCP_log,na.rm = T)
+sdIncome = sd(data$PINCP_log,na.rm=T)
+meanIncomeByLabel = ddply(data,label,summarise,mean=mean(PINCP_log,na.rm=TRUE),sd=sd(PINCP_log,na.rm=TRUE))
+highDevCategories = meanIncomeByLabel[abs(meanIncomeByLabel$mean-meanIncome) > meanIncomeByLabel$sd*n,label]
+result = factor(data[[label]],highDevCategories)
+return(addNA(result))
+}
+```
+
+
+```{r}
+
+########################################
+#Data Transformation for PINCP         #
+########################################
+
+
+acsTransformed <- data.frame(PINCP_log = log(acs$PINCP))
+
+#Select a sample of the population to test everything on
+#Note: Recode all transformation steps against full dataset once finalized
+par(mfrow=c(1,1))
+hist(acsTransformed$PINCP_log)
+
+########################################
+#Data Transformation for AGEP          #
+########################################
+acsTransformed$AGEP = acs$AGEP
+hist(acsTransformed$AGEP)
+summary(acsTransformed$AGEP)
+describe(acsTransformed$AGEP)
+length(na.omit(acsTransformed$POBP != 0))
+
+acsTransformed$AGEP_bin <- cut(acs$AGEP, c(-1, 20, 30, 40, 50, 60, 70, 80, 90, 100))
+table(acsTransformed$AGEP_bin)
+
+###MAR####
+
+acsTransformed$MAR = factor(acs$MAR)
+levels(acsTransformed$MAR) = c("Married","Widowed","Divorced","Separated","Not Married")
+
+
+###########################################################
+#Data Transformation for SCHL (Years of School Completed) #
+###########################################################
+
+par(mfrow=c(1,1))
+acsTransformed$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 13, 16, 20, 22, 24)))
+table(acsTransformed$SCHL_bin)
+
+ggplot(acsTransformed, aes(x=SCHL_bin)) + xlim(0,7) + geom_bar(stat="count", fill="#0072B2", colour="black") + ggtitle("Years of School")
+
+##############################################
+#Data Transformation for FCITP (Citizenship) #
+##############################################
+
+acsTransformed$FCITP= acs$FCITP
+summary(acsTransformed$FCITP)
+length(na.omit(acsTransformed$FCITP != 0))
+hist(acsTransformed$FCITP)
+
+######################################################
+#Data Transformation for JWMNP (Travel Time to Work) #
+######################################################
+
+acsTransformed$JWMNP= acs$JWMNP
+acsTransformed$JWMNP[is.na(acs$JWMNP)] = 0
+summary(acsTransformed$JWMNP)
+length(na.omit(acsTransformed$JWMNP != 0))
+length(acsTransformed$JWMNP[acsTransformed$JWMNP==0])
+hist(acsTransformed$JWMNP)
+
+######################################################
+#Data Transformation for WKHP (Hours Worked per Week) #
+######################################################
+acsTransformed$WKHP= acs$WKHP
+acsTransformed$WKHP[is.na(acs$WKHP)] = 0
+summary(acsTransformed$WKHP)
+length(na.omit(acsTransformed$WKHP != 0))
+hist(acsTransformed$WKHP)
+
+######################################################
+#Data Transformation for INDP:  #
+######################################################
+acsTransformed$INDP = acs$INDP
+acsTransformed$INDP = getOnlyHighDev(acsTransformed,"INDP",1)
+summary(acsTransformed$INDP)
+plot(acsTransformed$INDP)
+
+
+######################################################
+#Data Transformation for LANP (Language Spoken)      #
+######################################################
+
+acsTransformed$LANP_bin = "Non-English, Non-Spanish"
+
+acsTransformed$LANP_bin[is.na(acs$LANP)] <- "English"
+acsTransformed$LANP_bin[acs$LANP == 625] <- "Spanish"
+acsTransformed$LANP_bin = factor(acsTransformed$LANP_bin)
+
+######################################################
+#Data Transformation for ANC1P (Ancestry)            #
+######################################################
+
+acsTransformed$ANC1P = acs$ANC1P
+acsTransformed$ANC1P = getOnlyHighDev(acsTransformed,"ANC1P",1)
+
+length(is.null(acsTransformed$ANC1P))
+summary(acsTransformed$ANC1P)
+
+######################################################
+#Data Transformation for POBP (Place of Birth)       #
+######################################################
+
+acsTransformed$POBP_US = acs$POBP < 73
+
+######################################################
+#Data Transformation for POWSP (Place of Work)       #
+######################################################
+
+acsTransformed$POWSP_US = acs$POWSP < 73
+
+```
+
+#Model training
+
