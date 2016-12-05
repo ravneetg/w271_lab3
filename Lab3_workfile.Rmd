@@ -901,3 +901,136 @@ acsTransformed$POWSP_US = acs$POWSP < 73
 
 #Model training
 
+
+##Model Assumptions and Diagnostics
+
+###Overall Observations on Statistical Validity of the Model
+
+The survey applies adjustments for several variables collected in the survey to weight the data in order to better resemble a nationally representative sample. This means that the ACS data is fundamentally biased, and may not be portrayed as fully accurate, exogenous tool. The weight values were present in the data set for some of the variables, but were not used for this analysis.
+
+While some variables were reported as being top or bottom-coded, our analysis showed that the number of impacted records was very small, and deemed to be not significantly impactful to the model results as their frequency was minimal.
+
+And while many income values in survey data are categorical, the ACS treats this variable as an ordinal feature, making it much more conduscive for OLS regression analysis.
+
+###1.) Random Sampling
+
+From the Census Bureau literature: (https://www.census.gov/content/dam/Census/programs-surveys/acs/about/ACS_Information_Guide.pdf)
+
+The Census Bureau selects a random sample of addresses to be included in the ACS. Each address has about a 1-in-480 chance of being selected in a month, and no address should be selected more than once every 5 years. The Census Bureau mails questionnaires to approximately 295,000 addresses a month across the United States. This is a small number of households considering there are more than 180 million addresses in the United States and an address that receives ACS instructions will not likely fi nd a neighbor or friend who has also received them.
+
+Observations:
+
+The Census Bureau randomly selects its list of addresses from the US Postal Service, which is known for being quite complete and accurate. However, error and omissions do exists, specifically (but not limited to) new homes, seasonal dwellings, and for transient or homeless individuals.  But note that to address this last source of error, the Census Bureau does send surveys to group homes. Another source of error is that this data is obviously only available for compliant sample subjects who complete the information completely and accurately.  While this assumption is helped by the fact that this survey is mandated by law, it is possible that compliance rates may be lower for certain communities.
+
+###Linearity in Parameters
+
+[The model violates the assumption of linearity in parameters as can be seen in the plot of the residuals against the fitted values. The remediate for this is to look at transformations for the contributing parameters (AGE) and to include additional interaction terms for ...]
+
+###No Perfect Collinearity
+
+Explained as, in the sample (and therefore in the population), the assumption is that none of the independent variables are constant and there are no exact relationships among the independent variables. While this assumption only rules out perfect collinearity/correlation between explanatory variables, imperfect correlation is allowed. In practice, high correlation can greatly increase errors.
+
+Observations:
+
+[The following explanatory variables appear to have high correlation... Constant variables are also ruled out, as they are collinear with the intercept term. To remediate this, the following variables  will be eliminated. ] 
+
+###Mean of error term is zero (zero conditional mean)
+
+Explained as, even if we look at a specific value of x, we still expect errors to average to zero. The explanatory variable must not contain information about the mean of ANY unobserved factors. This isn't a strong assumption, because we could always change $$ \beta_0  $$ to move our line up or down so that the mean error is zero. If the errors had a common nonzero mean, and you fitted a least square model, it would be absorbed by the constant, and the residuals would on average be zero. So you can't test whether the residuals have a common mean that's not zero. What you can check is whether the residuals (and by implication the errors that they estimate) have constant mean; on average they're still zero, but conditionally they may have means some distance from zero.
+
+Observations:
+
+The Residuals Vs. Fitted plot as a loess smooth superimposed, but without the curve you can still discern that ... [i.e. the points tend to sit above the zero line at each end and perhaps below it in the middle. You can immediately see that the linearity assumption is somewhat suspect, and that perhaps some curved relationship is present.]
+
+[By utilizing a log transformation of the dependent variable, PINP, we are able to show a more linear relationship betweent the predictors and the dependent variable.]
+
+[If we can't meet the Assumption of Zero Conditional Mean, we might be able to meet the weaker assumption of exogeneity.]
+
+###Omitted Variable Bias
+
+This model violoates the zero conditional mean assumption with respect to omitted variable bias because of the lack of several features that are likely represented in the error term, including: wealth and education of parents, what their lifestyle costs (thrifty?), or how they choose to live or spend their money, income in previous years (that may have provided adequate funds for subsequent years), and other living expenses...as well as many others. This indicates that the model's estimates could be biased due to omitting several potentially important variables.
+
+###Exogeneity
+
+Because of the large size of our dataset, exogeneity is a critical assumption. We tested that the explanatory variables are uncorrelated with the error term (called exogenity). If $$ \x_j $$ is exogenous, $$ Cov(\x_j,u)=0 $$
+
+###Homoskedasticity - Variance of error term is constant
+
+The error term can't vary more for some values of our predictor variables than others, otherwise stated as the values of the explanatory variables must contain no information about the variability of the error. This is a strong assumption.
+
+[The null hypothesis of homoskedasticity specified in the *Breusch-Pagan* test is rejected.]
+
+[The QQ plot shows some evidence of heteroskedasticity. The distribution of the residuals was nearly normal with some positive skew, further indicating possible heteroskedasticity. The residual vs. fitted plot confirms this by showing non-even distribution of variance.]
+
+[Remediation for Heteroskedasticity is to utilize heteroskedasticity-robust tools such as the White standard errors.]
+
+[The QQ plot shows some evidence of heteroskedasticity. The distribution of the residuals was nearly normal with some positive skew, further indicating possible heteroskedasticity.]
+
+###Normality of error term:
+
+[Due to the (very) large sample size, small deviations from the assumption of a normal distribution of error terms do not necessarily negate the statistical significance of tests that require this assumption. Our model does show significant deviations in the normality of the error term, which we attempted to reduce the effects by using robust tools (i.e F-test), as well as by transforming the [XXX] variables.]
+
+###Other sources of bias or error:
+
+The data is also collected at a person and household level. When a survey reaches a household, each person living in the household is asked to complete the form. It is likely that there may be more similarities than differences among individuals living together. Also, we chose the income person's income as the dependent variable because household income was not readily available for analysis.  This could introduce some bias in that certain people are likely benefiting from their partner's income, therefore their lifestyle-related survey responses may not be reflective of their personal income.
+
+```{r}
+
+#PLACE INITIAL MODELS HERE
+mod0 <- 
+mod1 <- 
+mod2 <- 
+
+#Utilize White Standard Error because of evidence of Heteroskedasticity
+mod0_robust <- coeftest(model0, vcov = vcovHC)
+mod1_robust <- coeftest(model1, vcov = vcovHC)
+mod2_robust <- coeftest(model2, vcov = vcovHC)
+
+stargazer(mod0_robust, mod1_robust, mod2_robust, type = "text")
+
+#Evaluate if there is any difference between the different models we generated
+waldtest(mod0, mod1)
+waldtest(mod1, mod2)
+
+#Pick best model and run majority of diagnostics on that model (which will be named mod0)
+
+#Model Assumption Diagnostics Plots
+plot(mod0)
+residualPlots(mod0)
+
+#Evaluate serial correlation of the residuals
+plot(mod0$residuals, main="Autocorrelation Function of Model Residuals")
+acf(0$residuals, main="Autocorrelation Function of Model Residuals")
+
+#Correlation among variables - to identify relationships that warrant further investigation
+library(corrplot)
+M <- cor(acs)
+corrplot(M, method="circle")
+
+shapiro.test(mod0$residuals)
+
+#Breusch-Pagan Test for Homoskedasticity
+bptest(mod0)
+
+par(mfrow=c(1,1))
+hist(mod0$residuals)
+qqnorm(mod0$residuals)
+qqline(mod0$residuals)
+scatterplot(mod0$fitted.values, mod0$residuals, smoother = loessLine, cex = 0.5, pch = 19,    smoother.args = list(lty = 1, lwd = 5))
+
+#Exogeneity
+exo_mod1 <- lm(mod0$residuals ~ acs$AGEP)
+exo_mod2 <- lm(mod0$residuals ~ acs$VAR2)
+exo_mod3 <- lm(mod0$residuals ~ acs$VAR3)
+exo_mod4 <- lm(mod0$residuals ~ acs$VAR4)
+exo_mod5 <- lm(mod0$residuals ~ acs$VAR5)
+
+summary(exo_mod1)
+summary(exo_mod2)
+summary(exo_mod3)
+summary(exo_mod4)
+summary(exo_mod5)
+
+```
+
+
