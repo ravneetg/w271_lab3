@@ -706,11 +706,17 @@ After performing EDA on the raw dataset, we decided on the following actions:
 
 * PINCP: Dependent variable.  Transform with Log
 * POWSP: Independent variable.  Transform to binary - US/Non-US
-* AGP: Independent variable
-* SEX: Independent variable.  Transform to binary
+* POBP: Independent variable.  Transform to binary - US/Non-US
+* AGP: Independent variable.  Bucket by decade
+* SEX: Independent variable. 
 * MAR: Independent variable.  Transform to categorical
-* MARHT: Conditional: Transform NA values to 0, check correaltion with MAR
-* MARHYP:
+* SCHL: Independent variable  Bucket by (No schooling, Some Highschool, GED, Associates Degree, Bachelors Degree, Masters Degree or higher)
+* INDP: Independent variable  Transform to categorical
+* ANC1P: Independent variable  Transform to categorical
+* LANP: Independent variable  Bucket by (English, Spanish, Other buckets)
+* FCITP: Independent variable
+* JWMNP: Independent variable
+* WKHP: Independent variable
 
 ##
 
@@ -808,8 +814,8 @@ hist(acsTransformed$WKHP)
 ######################################################
 #Data Transformation for INDP:  #
 ######################################################
-acsTransformed$INDP = acs$INDP
-acsTransformed$INDP = getOnlyHighDev(acsTransformed,"INDP",1)
+acsTransformed$INDP = factor(acs$INDP)
+acsTransformed$INDP = addNA(acsTransformed$INDP)
 summary(acsTransformed$INDP)
 plot(acsTransformed$INDP)
 
@@ -828,8 +834,8 @@ acsTransformed$LANP_bin = factor(acsTransformed$LANP_bin)
 #Data Transformation for ANC1P (Ancestry)            #
 ######################################################
 
-acsTransformed$ANC1P = acs$ANC1P
-acsTransformed$ANC1P = getOnlyHighDev(acsTransformed,"ANC1P",1)
+acsTransformed$ANC1P = factor(acs$ANC1P)
+acsTransformed$ANC1P = addNA(acsTransformed$ANC1P)
 
 length(is.null(acsTransformed$ANC1P))
 summary(acsTransformed$ANC1P)
