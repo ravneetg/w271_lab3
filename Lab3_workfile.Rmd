@@ -1,30 +1,74 @@
 ---
-title: "Lab 3 WorkFile"
-author: "Chris Bennett"
+title: "W271 - Section 1 Lab 3"
+author: "Chris Bennett, Jackson Lane, Ravneet Ghuman"
 date: "November 10, 2016"
 output: html_document
 ---
 
+###Table of Contents
+
+* Project Description
+    * Data Science Question
+    * Project Overview
+    * About The 2014 American Community Survey
+* Exploratory Data Analysis
+    * Observations On The Entire Data Set 
+    * Evaluation of Candidate Dependent Variables
+    * Evaluation of Candidate Independent Variables
+* Data Transformation
+* EDA of Transformed Variables
+* Model Development
+* Model Analysis
+    * Model Performance Evaluation
+    * Assumptions and Diagnostics
+    * Assumption Violation Remediation
+* Model Selection
+* Conclusion - How Does The Model Help Answer The Data Science Question
+
+##Project Description
+
+###Data Science Question
+
+How accurately can one predict a person's income by utilizing survey data related to [household
+costs, age of home, size of family, number of vehicles, occupation industry, language, location, and demographic attributes such as age, weight, education level and marital status?]
+
+Why we chose this question: In the marketing industry, knowing an individual's income is important for determining whether or not they will be likely to purchase an item (or service) of a specific amount. In many cases, consumers are willing to provide details around many aspects of their lives to surveys and warrantee forms, but they are less likely to provide their personal income.  We are approaching this survey to see if we can predict income by using potentially more readily available data (e.g. language spoken, education, commute time, work hours, et al).
+
+###Overview
+
+We utilized a portion of the 2014 American Community Survey data, as collected by the US. Census Bureau to conduct an OLS Multi-variate Linear Regression Analysis of survey data to predict a person's income (as self-reported in the same ACS survey data).
+
+The American Community Survey (ACS) is an annual survey that provides vital information on a
+yearly basis about our nation and its people. Information from the survey generates data that help
+determine how more than $400 billion in federal and state funds are distributed each year.
+Through the ACS, we know more about jobs and occupations, educational attainment, veterans,
+whether people own or rent their home, and other topics. Public officials, planners, and
+entrepreneurs use this information to assess the past and plan the future. When you respond to the
+ACS, you are doing your part to help your community plan hospitals and schools, support school
+lunch programs, improve emergency services, build bridges, and inform businesses looking to add
+jobs and expand to new markets, and more.
+
+The 2014 ACS Survey Data Dictionary can be found here: http://www2.census.gov/programs-surveys/acs/tech_docs/pums/data_dict/PUMSDataDict14.pdf
+
+The American Community Survey (ACS) is administered, processed, researched and disseminated
+by the U.S. Census Bureau within the U.S. Department of Commerce.
+
 ##About the 2014 American Community Survey
-Prepared by American Community Survey Office - U.S. Census Bureau - October 27, 2015
-
-The data used in this lab is referred to as the Public Use Microdata Sample (PUMS).
-
-The Public Use Microdata Sample (PUMS) contains a sample of actual responses to the American Community Survey (ACS). The PUMS dataset includes variables for nearly every question on the survey, as well as many new variables that were derived after the fact from multiple survey responses (such as poverty status). Each record in the file represents a single person, or--in the household-level dataset--a single housing unit. In the person-level file, individuals are organized into households, making possible the study of people within the contexts of their families and other household members. PUMS files for an individual year, such as 2014, contain data on approximately one percent of the United States population. PUMS files covering a five-year period, such as 2010-2014, contain data on approximately five percent of the United States population.
-
-The PUMS files are much more flexible than the aggregate data available on American FactFinder, though the PUMS also tend to be more complicated to use. 
+Prepared by American Community Survey Office - U.S. Census Bureau - October 27, 2015. The data used in this lab is referred to as the Public Use Microdata Sample (PUMS). The Public Use Microdata Sample (PUMS) contains a sample of actual responses to the American Community Survey (ACS). Each record in the file represents a single person, or--in the household-level dataset--a single housing unit. PUMS files for an individual year, such as 2014, contain data on approximately one percent of the United States population. PUMS files covering a five-year period, such as 2010-2014, contain data on approximately five percent of the United States population. 
 
 Since all ACS responses are strictly confidential, many variables in the PUMS files have been modified in order to protect the confidentiality of survey respondents. For instance, particularly high incomes are "top-coded," uncommon birthplace or ancestry responses are grouped into broader categories, and the PUMS files provide a very limited set of geographic variables (explained more below).
+
+We will explore the top-coding of the income variable more in the following sections of this paper.
 
 ##Weights in PUMS
 
 The ACS PUMS is a weighted sample, and weighting variables must be used to generate accurate estimates and standard errors. The PUMS files include both population weights and household weights. Population weights should be used to generate statistics about individuals, and household weights should be used to generate statistics about housing units. The weighting variables are described briefly below.
 
 ###PWGTP: Person's weight for generating statistics on individuals (such as age).
-
 ###WGTP: Household weight for generating statistics on housing units and households (such as average household income).
-
 ###WGTP1-WGTP80 and PWGTP1-PWGTP80: Replicate weighting variables, used for generating the most accurate standard errors for households or individuals.
+
+The analysis conducted in this paper excludes the use of any weighting, which does introduce potential bias into the exogeneity of the model results, but helps to simplify the data analysis for the purposes of this Lab Exercise.
 
 Some additional information on the survey's accuracy can be found at: http://www2.census.gov/programs-surveys/acs/tech_docs/pums/accuracy/2015AccuracyPUMS.pdf
 
