@@ -95,6 +95,9 @@ library(lattice)
 library(ggplot2)
 dev.off()
 rm(list=ls())
+
+#
+#setwd("/Users/rghuman/Documents/ds/w271/assignments/lab3/w271_lab3")
 #load RData file
 load("w271_lab3.Rproj.RData")
 
@@ -798,33 +801,29 @@ return(addNA(result))
 ########################################
 
 
-acsTransformed <- data.frame(PINCP_log = log(acs$PINCP))
+#acsTransformed <- data.frame(PINCP_log = log(acs$PINCP))
+acs$PINCP_log <- log(acs$PINCP)
 
 #Select a sample of the population to test everything on
 #Note: Recode all transformation steps against full dataset once finalized
 par(mfrow=c(1,1))
-hist(acsTransformed$PINCP_log)
+hist(acs$PINCP_log)
 
 ########################################
 #Data Transformation for AGEP          #
 ########################################
-acsTransformed$AGEP = acs$AGEP
-hist(acsTransformed$AGEP)
-summary(acsTransformed$AGEP)
-describe(acsTransformed$AGEP)
-length(na.omit(acsTransformed$POBP != 0))
+acs$AGEP_bin = acs$AGEP
+hist(acs$AGEP_bin)
+summary(acs$AGEP_bin)
+describe(acs$AGEP_bin)
+length(na.omit(acs$AGEP_bin != 0))
 
 # set starting age as 15 as records with age 14 or lower were filtered out
-acsTransformed$AGEP_bin <- cut(acs$AGEP, c(15, 20, 30, 40, 50, 60, 70, 80, 90, 100))
 acs$AGEP_bin <- cut(acs$AGEP, c(15, 20, 30, 40, 50, 60, 70, 80, 90, 100))#rg
 
-table(acsTransformed$AGEP_bin)
+table(acs$AGEP_bin)
 
 ###MAR####
-
-acsTransformed$MAR = factor(acs$MAR)
-levels(acsTransformed$MAR) = c("Married","Widowed","Divorced","Separated","Not Married")
-
 acs$MAR_bin = factor(acs$MAR)#rg
 levels(acs$MAR_bin) = c("Married","Widowed","Divorced","Separated","Not Married")#rg
 
@@ -834,46 +833,46 @@ levels(acs$MAR_bin) = c("Married","Widowed","Divorced","Separated","Not Married"
 ###########################################################
 
 par(mfrow=c(1,1))
-acsTransformed$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 13, 16, 20, 22, 24)))
 acs$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 13, 16, 20, 22, 24))) #rg
-table(acsTransformed$SCHL_bin)
+table(acs$SCHL_bin)
 
-ggplot(acsTransformed, aes(x=SCHL_bin)) + xlim(0,7) + geom_bar(stat="count", fill="#0072B2", colour="black") + ggtitle("Years of School")
+ggplot(acs, aes(x=SCHL_bin)) + xlim(0,7) + geom_bar(stat="count", fill="#0072B2", colour="black") + ggtitle("Years of School")
 
 ##############################################
 #Data Transformation for FCITP (Citizenship) #
 ##############################################
 
-acsTransformed$FCITP= acs$FCITP
-summary(acsTransformed$FCITP)
-length(na.omit(acsTransformed$FCITP != 0))
-hist(acsTransformed$FCITP)
+acs$FCITP_bin= acs$FCITP
+summary(acs$FCITP_bin)
+length(na.omit(acs$FCITP_bin != 0))
+hist(acs$FCITP_bin)
 
 ######################################################
 #Data Transformation for JWMNP (Travel Time to Work) #
 ######################################################
 
-acsTransformed$JWMNP= acs$JWMNP
-acsTransformed$JWMNP[is.na(acs$JWMNP)] = 0
-summary(acsTransformed$JWMNP)
-length(na.omit(acsTransformed$JWMNP != 0))
-length(acsTransformed$JWMNP[acsTransformed$JWMNP==0])
-hist(acsTransformed$JWMNP)
+acs$JWMNP_bin= acs$JWMNP
+acs$JWMNP_bin[is.na(acs$JWMNP)] = 0
+summary(acs$JWMNP_bin)
+length(na.omit(acs$JWMNP_bin != 0))
+length(acs$JWMNP_bin[acs$JWMNP_bin==0])
+hist(acs$JWMNP_bin)
 
 ######################################################
 #Data Transformation for WKHP (Hours Worked per Week) #
 ######################################################
-acsTransformed$WKHP= acs$WKHP
-acsTransformed$WKHP[is.na(acs$WKHP)] = 0
-summary(acsTransformed$WKHP)
-length(na.omit(acsTransformed$WKHP != 0))
-hist(acsTransformed$WKHP)
+acs$WKHP_bin= acs$WKHP
+acs$WKHP_bin[is.na(acs$WKHP)] = 0
+summary(acs$WKHP_bin)
+length(na.omit(acs$WKHP_bin != 0))
+hist(acs$WKHP_bin)
 
 ######################################################
 #Data Transformation for INDP:  #
 ######################################################
-acsTransformed$INDP = factor(acs$INDP)
-acsTransformed$INDP = addNA(acsTransformed$INDP)
+acs$INDP_bin = factor(acs$INDP)#rg
+acs$INDP_bin=addNA(acs$INDP_bin) #rg
+
 summary(acsTransformed$INDP)
 plot(acsTransformed$INDP)
 
@@ -881,34 +880,33 @@ plot(acsTransformed$INDP)
 ######################################################
 #Data Transformation for LANP (Language Spoken)      #
 ######################################################
+acs$LANP_bin="Non-English, Non-Spanish" #rg
 
-acsTransformed$LANP_bin = "Non-English, Non-Spanish"
-
-acsTransformed$LANP_bin[is.na(acs$LANP)] <- "English"
-acsTransformed$LANP_bin[acs$LANP == 625] <- "Spanish"
-acsTransformed$LANP_bin = factor(acsTransformed$LANP_bin)
+acs$LANP_bin[is.na(acs$LANP)]<- "English" #rg
+acs$LANP_bin[acs$LANP == 625] <- "Spanish" #rg
+acs$LANP_bin = factor(acs$LANP_bin) #rg
 
 ######################################################
 #Data Transformation for ANC1P (Ancestry)            #
 ######################################################
 
-acsTransformed$ANC1P = factor(acs$ANC1P)
-acsTransformed$ANC1P = addNA(acsTransformed$ANC1P)
+acs$ANC1P_bin = factor(acs$ANC1P) #rg
+acs$ANC1P_bin = addNA(acs$ANC1P_bin)#rg
 
-length(is.null(acsTransformed$ANC1P))
-summary(acsTransformed$ANC1P)
+length(is.null(acs$ANC1P_bin))
+summary(acs$ANC1P_bin)
 
 ######################################################
 #Data Transformation for POBP (Place of Birth)       #
 ######################################################
 
-acsTransformed$POBP_US = acs$POBP < 72 #changed from 73 to 72 #rg
+acs$POBP_US_bin = acs$POBP < 72 #changed from 73 to 72 #rg
 
 ######################################################
 #Data Transformation for POWSP (Place of Work)       #
 ######################################################
 
-acsTransformed$POWSP_US = acs$POWSP < 72 #changed from 73 to 72 #rg
+acs$POWSP_US_bin = acs$POWSP < 72 #changed from 73 to 72 #rg
 # filter so that place of work is in US 
 # (as there could be other confounding variables that affect international income)
 
@@ -921,7 +919,7 @@ acsTransformed$POWSP_US = acs$POWSP < 72 #changed from 73 to 72 #rg
 ```{r}
 
 
-acs.testdata=acs[sample(nrow(acs), 100,replace=FALSE), ]
+acs.testdata=acs[sample(nrow(acs), 2000000,replace=FALSE), ]
 acs.small.testdata=acs.testdata[sample(nrow(acs.testdata), 30,replace=FALSE), ]
 acs.trainingdata = anti_join(acs, acs.testdata, by =c("SERIALNO","SPORDER"))
 
@@ -938,7 +936,9 @@ nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 # acsmod <- head(acspull,140000)#rg
 # acstest <- tail(acspull,5000)#rg
 
-modtest = lm(log(PINCP) ~ factor(AGEP_bin) + factor(SCHL_bin) + JWMNP + WKHP,data=acs.trainingdata)#rg
+modtest = lm(log(PINCP) ~ factor(AGEP_bin) + factor(SCHL_bin) + 
+               JWMNP + WKHP + JWMNP*WKHP,
+             data=acs.trainingdata)#rg
 summary(modtest)
 
 plot(modtest)
@@ -947,7 +947,7 @@ plot(modtest)
 #factor(INDP), acstest)) #rg
 
 #### code for predictions
-predictions = predict.lm(modtest,acs.testdata,se.fit = FALSE, interval = "confidence" )#rg
+predictions = predict.lm(modtest,acs.small.testdata,se.fit = FALSE, interval = "confidence" )#rg
 
 ### view side by side
 head(cbind(predictions,log(acs.testdata$PINCP)))#rg
@@ -1103,5 +1103,3 @@ summary(exo_mod4)
 summary(exo_mod5)
 
 ```
-
-
