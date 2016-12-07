@@ -86,14 +86,11 @@ library(psych)
 library(dplyr)
 library(plyr)
 library(corrplot)
-<<<<<<< HEAD
   library(reshape2)
 require(lmtest)
   library(gvlma)
-=======
 library(reshape2)
 library(gvlma)
->>>>>>> e5cc7f884aa20ea07f9494469ed851aa51ac9cde
 library(car)
 library(Hmisc)
 library(dummy)
@@ -1076,10 +1073,11 @@ return(p<.05)
 }
 
 
-# The Shapiro-Wilk test of normality can only handle 5000 data points.
-# Take a random sample of residuals if there are more than 5000 data points
+#Function to check model assumptions, plot residual charts
 runDiagnostics = function(model){
 
+# The Shapiro-Wilk test of normality can only handle 5000 data points.
+# Take a random sample of residuals if there are more than 5000 data points
 if(nrow(model$model) < 5000)  {
     residualsSubset = model$residuals
 }else{
