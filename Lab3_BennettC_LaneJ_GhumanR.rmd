@@ -87,6 +87,7 @@ library(psych)
   library(plyr)
 library(corrplot)
   library(reshape2)
+require(lmtest)
   library(gvlma)
 library(car)
 library(Hmisc)
@@ -783,18 +784,6 @@ acs = acs[acs$AGEP>=15,]#rg
 ```
 
 ```{r}
-getOnlyHighDev = function(data,label,n=1){
-  meanIncome = mean(data$PINCP_log,na.rm = T)
-sdIncome = sd(data$PINCP_log,na.rm=T)
-meanIncomeByLabel = ddply(data,label,summarise,mean=mean(PINCP_log,na.rm=TRUE),sd=sd(PINCP_log,na.rm=TRUE))
-highDevCategories = meanIncomeByLabel[abs(meanIncomeByLabel$mean-meanIncome) > meanIncomeByLabel$sd*n,label]
-result = factor(data[[label]],highDevCategories)
-return(addNA(result))
-}
-```
-
-
-```{r}
 
 ########################################
 #Data Transformation for PINCP         #
@@ -919,7 +908,7 @@ acs$POWSP_US_bin = acs$POWSP < 72 #changed from 73 to 72 #rg
 ```{r}
 
 
-acs.testdata=acs[sample(nrow(acs), 2000000,replace=FALSE), ]
+acs.testdata=acs[sample(nrow(acs),2220000,replace=FALSE), ]
 acs.small.testdata=acs.testdata[sample(nrow(acs.testdata), 30,replace=FALSE), ]
 acs.trainingdata = anti_join(acs, acs.testdata, by =c("SERIALNO","SPORDER"))
 
@@ -936,8 +925,8 @@ nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 # acsmod <- head(acspull,140000)#rg
 # acstest <- tail(acspull,5000)#rg
 
-modtest = lm(log(PINCP) ~ factor(AGEP_bin) + factor(SCHL_bin) + 
-               JWMNP + WKHP + JWMNP*WKHP,
+modtest = lm(PINCP_log ~ AGEP_bin + SCHL_bin + 
+               JWMNP_bin + WKHP_bin + JWMNP_bin*WKHP_bin,
              data=acs.trainingdata)#rg
 summary(modtest)
 
@@ -974,6 +963,60 @@ predictions = predict(lm(log(PINCP) ~ WKHP, acstest))
 ```
 
 ##Model Assumptions and Diagnostics
+
+```{r}
+
+#Helper function to check if a regression model is statistically significant.
+checkModelSig = function(model){
+  
+  f = summary(model)$fstatistic
+p = pf(f[1],f[2],f[3],lower.tail = F)
+return(p<.05)
+}
+
+
+# The Shapiro-Wilk test of normality can only handle 5000 data points.
+# Take a random sample of residuals if there are more than 5000 data points
+runDiagnostics = function(model){
+
+if(nrow(model$model) < 5000)  {
+    residualsSubset = model$residuals
+}else{
+    residualsSubset = sample(model$residuals,5000)
+
+}
+
+  
+# At least for my computer, R is not able to plot models with too many training points.  
+# So only draw plots for models with less than 50000 data points (number choosen arbitrarily)
+# We can still test the OLS assumptions though with statistical tests 
+if(nrow(model$model) < 50000){
+par(mfrow=c(1,2))
+hist(model$residuals, main="Histogram of Model Residuals")
+qqnorm(model$residuals)
+qqline(model$residuals)
+scatterplot(model$fitted.values, model$residuals,
+            smoother = loessLine, cex = 0.5, pch = 19,
+            smoother.args = list(lty = 1, lwd = 5),main = "Actual Vs Fitted Values")
+residualPlots(model, main="Plots of Residuals vs Indepenent Variables")
+
+}
+  
+# Formal statistical tests of OLS assumptions
+statTests = as.data.frame(rbind(c("Linearity","Rainbow test",raintest(model)$p.value > .05),c("Normality of Residuals","Shapiro test",shapiro.test(residualsSubset)$p.value > .05),c(  "Homoskedasticity","Breusch-Pagan test",
+bptest(model)$p.value > .05),c("Autocorrelation","Durbin-Watson test",durbinWatsonTest(model)$p > .05)))
+names(statTests) = c("Assumption","Test","Passed")
+
+# Exogeneity tests for each independent variable
+exoTests = sapply(model$model[-1],function(x){!checkModelSig(lm(model$residuals~x-1))})
+names(exoTests) = names(model$model[-1])
+exoTests = data.frame(Assumption = paste("Exogeneity for",names(exoTests)),Test="Regress residuals on variable",Passed=exoTests, row.names=NULL)
+
+# Return combined table
+rbind(statTests,exoTests)
+}
+```
+
 
 ###Overall Observations on Statistical Validity of the Model
 
@@ -1048,7 +1091,7 @@ The data is also collected at a person and household level. When a survey reache
 ```{r}
 
 #PLACE INITIAL MODELS HERE
-mod0 <- 
+mod0 <- lm(acs)
 mod1 <- 
 mod2 <- 
 
@@ -1065,41 +1108,47 @@ waldtest(mod1, mod2)
 
 #Pick best model and run majority of diagnostics on that model (which will be named mod0)
 
-#Model Assumption Diagnostics Plots
-plot(mod0)
-residualPlots(mod0)
-
-#Evaluate serial correlation of the residuals
-plot(mod0$residuals, main="Autocorrelation Function of Model Residuals")
-acf(0$residuals, main="Autocorrelation Function of Model Residuals")
-
-#Correlation among variables - to identify relationships that warrant further investigation
-library(corrplot)
-M <- cor(acs)
-corrplot(M, method="circle")
-
-shapiro.test(mod0$residuals)
-
-#Breusch-Pagan Test for Homoskedasticity
-bptest(mod0)
-
-par(mfrow=c(1,1))
-hist(mod0$residuals)
-qqnorm(mod0$residuals)
-qqline(mod0$residuals)
-scatterplot(mod0$fitted.values, mod0$residuals, smoother = loessLine, cex = 0.5, pch = 19,    smoother.args = list(lty = 1, lwd = 5))
-
-#Exogeneity
-exo_mod1 <- lm(mod0$residuals ~ acs$AGEP)
-exo_mod2 <- lm(mod0$residuals ~ acs$VAR2)
-exo_mod3 <- lm(mod0$residuals ~ acs$VAR3)
-exo_mod4 <- lm(mod0$residuals ~ acs$VAR4)
-exo_mod5 <- lm(mod0$residuals ~ acs$VAR5)
-
-summary(exo_mod1)
-summary(exo_mod2)
-summary(exo_mod3)
-summary(exo_mod4)
-summary(exo_mod5)
-
 ```
+
+```{r}
+
+runDiagnostics(mod0)
+
+# #Model Assumption Diagnostics Plots
+# plot(mod0)
+# residualPlots(mod0)
+# 
+# #Evaluate serial correlation of the residuals
+# plot(mod0$residuals, main="Autocorrelation Function of Model Residuals")
+# acf(0$residuals, main="Autocorrelation Function of Model Residuals")
+# 
+# #Correlation among variables - to identify relationships that warrant further investigation
+# library(corrplot)
+# M <- cor(acs)
+# corrplot(M, method="circle")
+# 
+# shapiro.test(mod0$residuals)
+# 
+# #Breusch-Pagan Test for Homoskedasticity
+# bptest(mod0)
+# 
+# par(mfrow=c(1,1))
+# hist(mod0$residuals)
+# qqnorm(mod0$residuals)
+# qqline(mod0$residuals)
+# scatterplot(mod0$fitted.values, mod0$residuals, smoother = loessLine, cex = 0.5, pch = 19,    smoother.args = list(lty = 1, lwd = 5))
+# 
+# #Exogeneity
+# exo_mod1 <- lm(mod0$residuals ~ acs$AGEP)
+# exo_mod2 <- lm(mod0$residuals ~ acs$VAR2)
+# exo_mod3 <- lm(mod0$residuals ~ acs$VAR3)
+# exo_mod4 <- lm(mod0$residuals ~ acs$VAR4)
+# exo_mod5 <- lm(mod0$residuals ~ acs$VAR5)
+# 
+# summary(exo_mod1)
+# summary(exo_mod2)
+# summary(exo_mod3)
+# summary(exo_mod4)
+# summary(exo_mod5)
+```
+
