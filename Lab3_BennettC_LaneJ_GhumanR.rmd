@@ -86,14 +86,11 @@ library(psych)
 library(dplyr)
 library(plyr)
 library(corrplot)
-<<<<<<< HEAD
   library(reshape2)
 require(lmtest)
   library(gvlma)
-=======
 library(reshape2)
 library(gvlma)
->>>>>>> e5cc7f884aa20ea07f9494469ed851aa51ac9cde
 library(car)
 library(Hmisc)
 library(dummy)
