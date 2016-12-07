@@ -51,27 +51,27 @@ ACS, you are doing your part to help your community plan hospitals and schools, 
 lunch programs, improve emergency services, build bridges, and inform businesses looking to add
 jobs and expand to new markets, and more.
 
-The 2014 ACS Survey Data Dictionary can be found here: http://www2.census.gov/programs-surveys/acs/tech_docs/pums/data_dict/PUMSDataDict14.pdf
-
 The American Community Survey (ACS) is administered, processed, researched and disseminated
 by the U.S. Census Bureau within the U.S. Department of Commerce.
 
-##About the 2014 American Community Survey
+###About the 2014 American Community Survey
+
 Prepared by American Community Survey Office - U.S. Census Bureau - October 27, 2015. The data used in this lab is referred to as the Public Use Microdata Sample (PUMS). The Public Use Microdata Sample (PUMS) contains a sample of actual responses to the American Community Survey (ACS). Each record in the file represents a single person, or--in the household-level dataset--a single housing unit. PUMS files for an individual year, such as 2014, contain data on approximately one percent of the United States population. PUMS files covering a five-year period, such as 2010-2014, contain data on approximately five percent of the United States population. 
 
 Since all ACS responses are strictly confidential, many variables in the PUMS files have been modified in order to protect the confidentiality of survey respondents. For instance, particularly high incomes are "top-coded," uncommon birthplace or ancestry responses are grouped into broader categories, and the PUMS files provide a very limited set of geographic variables (explained more below).
 
 We will explore the top-coding of the income variable more in the following sections of this paper.
 
-##Weights in PUMS
+####Weights in PUMS
 
 The ACS PUMS is a weighted sample, and weighting variables must be used to generate accurate estimates and standard errors. The PUMS files include both population weights and household weights. Population weights should be used to generate statistics about individuals, and household weights should be used to generate statistics about housing units. The weighting variables are described briefly below.
 
-###PWGTP: Person's weight for generating statistics on individuals (such as age).
-###WGTP: Household weight for generating statistics on housing units and households (such as average household income).
-###WGTP1-WGTP80 and PWGTP1-PWGTP80: Replicate weighting variables, used for generating the most accurate standard errors for households or individuals.
-
 The analysis conducted in this paper excludes the use of any weighting, which does introduce potential bias into the exogeneity of the model results, but helps to simplify the data analysis for the purposes of this Lab Exercise.
+
+The 2014 ACS Survey Data Dictionary can be found here: http://www2.census.gov/programs-surveys/acs/tech_docs/pums/data_dict/PUMSDataDict14.pdf
+
+The actual 2014 Survey questions can be found at:
+http://www2.census.gov/programs-surveys/acs/methodology/questionnaires/2014/quest14.pdf
 
 Some additional information on the survey's accuracy can be found at: http://www2.census.gov/programs-surveys/acs/tech_docs/pums/accuracy/2015AccuracyPUMS.pdf
 
@@ -83,26 +83,29 @@ http://www.census.gov/programs-surveys/acs/technical-documentation/pums/document
 #The following block of code loads the two survey files and concatenates them together
 
 library(psych)
-  library(dplyr)
-  library(plyr)
+library(dplyr)
+library(plyr)
 library(corrplot)
-  library(reshape2)
-  library(gvlma)
+library(reshape2)
+library(gvlma)
 library(car)
 library(Hmisc)
 library(dummy)
 library(lattice)
 library(ggplot2)
+library(corrplot)
 dev.off()
 rm(list=ls())
 
-#
 #setwd("/Users/rghuman/Documents/ds/w271/assignments/lab3/w271_lab3")
+
 #load RData file
 load("w271_lab3.Rproj.RData")
 
-# #Code to read data from input files included in case RData file not available
-# 
+
+#############################################################################################
+# Code to read data from input files included in case RData file not available
+# ----------------------------------------------------------------------------
 # mydata = read.csv("input/ss14pusa.csv", header=TRUE)
 # mydatab = read.csv("input/ss14pusb.csv", header=TRUE)
 # 
@@ -120,6 +123,7 @@ load("w271_lab3.Rproj.RData")
 # names(acsdata)
 # 
 # summary(acsdata)
+############################################################################################
 
 ```
 
@@ -173,8 +177,98 @@ ADJINC -- Adjustment factor for income and earnings dollar amounts. The value of
 # acs <- acsdata[myvars]
 ```
 
+##Exploratory Data Analysis:
 
-Exploratory Data Analysis: 
+###Overall Dataset
+
+The 
+
+###Dependent Variables
+
+We evaluated three different variables that are related to a person's income to determine which of the three would be have the highest likelihood of performing well as a Y-variable in a linear regression.  Overall, we evaluated the range/spread, distribution, top & bottom-coding, and the number of unique values. We also conducted some evaluation on correlation with the different dependent variables under consideration from the ACS study.
+
+NOTE: It is suggested in the ACS Survey Documentation that we use ADJINC to adjust PERNP, PINCP, and WAGP to constant dollars at 2014 value. We have chosen not to make this adjustment for the sake of this analysis, as their relative values to the independent variables is our need in developing the most accurate and predictive value possible. Additionally, this adjustment factor has the same value for all records, which further indicates it will have no impact (positive or negative) on our model development.
+
+####1.) PERNP - Total Person's Earnings
+
+Description of this field: Total Person's Earnings
+
+The following description is from the data dictionary:
+bbbbbbb          .N/A (less than 15 years old)
+0000000          .No earnings
+-010000          .Loss of $10000 or more (Rounded & bottom-coded .components)
+-000001..-009999 .Loss $1 to $9999 (Rounded components)
+0000001          .$1 or break even
+0000002..9999999 .$2 to $9999999 (Rounded & top-coded components)
+
+Our analysis of the PERNP variable:
+
+* Missing values (NAs): 581,723
+* Mean: 28,300
+* Median: 10,000
+* Min: -8,500
+* Max: 1,030,000
+* Zero values: 1,539,488
+* Number of Unique Values: 5,060
+* Number of non-NA, non-zero values: 2,550,887
+* Distribution: Non-normal distribution with a very positive skew
+
+####2.) PINCP - Total person's income (signed)
+
+Description of this field: Total person's income (signed)
+
+The following description is from the data dictionary:
+bbbbbbb          .N/A (less than 15 years old)
+0000000          .None
+-019999          .Loss of $19999 or more (Rounded & bottom-coded components)
+-000001..-019998 .Loss $1 to $19998 (Rounded components)
+0000001          .$1 or break even
+0000002..9999999 .$2 to $9999999 (Rounded & top-coded components)
+
+Our analysis of the PINCP variable:
+
+* Missing values (NAs): 541,687
+* Mean: 36,500
+* Median: 21,500
+* Min: -13,000
+* Max: 1,400,000
+* Zero values: 881,976
+* Number of Unique Values: 19,622
+* Number of non-NA, non-zero values: 2,590,923 <- Double check this...
+* Distribution: Non-normal with a very positive skew
+
+####3.) WAGP - Wages or Salary Income Past 12 Months
+
+Description of this field: Wages or Salary Income Past 12 Months
+
+The following description is from the data dictionary:
+bbbbbb          .N/A (less than 15 years old)
+000000          .None
+000001..999999  .$1 to 999999 (Rounded and top-coded)
+
+Our analysis of the WAGP variable:
+
+* Missing values (NAs): 541,687
+* Mean: 26,100
+* Median: 6,000
+* Min: 0
+* Max: 642,000
+* Zero values: 1,636,095
+* Number of Unique Values: 912
+* Number of non-NA, non-zero values: 2,590,923
+* Distribution: Non-normal with a very positive skew
+
+####Conclusion:
+
+Upon inspection, PINCP has the fewest number of zero values, is tied for the fewest NA's, and has by far the most unique values. Given these characteristics, PINCP would likely make the most sense as the Dependent Variable for this model.  Therefore, for the remainder of this lab, we focused on predicting the PINCP from a number of the predictor variables that will be discussed further on.
+
+Also, due to similarities of WAGP and PINCP, it appears that one of the variables was likely generated from the other.  The attributes of these two variables do have some slight differences, but their similarities are strong enough to be noted.
+
+#####Possible Transformations for PINCP:
+
+Because the distribution of PINCP is so concentrated on lower values and has a strong positive skew, we will evaluate models utilizing both a log transform of PINCP, as well as the raw value of PINCP.  Also, since we can only predict values with PINCP, we will reduce the dataset to only include records with a non-NA value in the PINCP variable. This will give us a maximum dataset size of 2,590,923
+
+###Independent Variables
 
 ```{r}
 #EDA for entire data set
@@ -188,11 +282,14 @@ ncol(acs) #total cols
 
 ```{r}
 #Correlation among variables - to identify relationships that warrant further investigation
-library(corrplot)
-M <- cor(acs)
-corrplot(M, method="circle")
-```
+#acssmall <- acs[sample(1:nrow(acs), 2000000, replace=FALSE),]
 
+myvars <- names(acs) %in% c("SERIALNO","ST","SPORDER","AGEP","SEX", "MAR", "SCHL", "FCITP", "JWMNP", "WKHP", "INDP", "ANC1P", "LANP", "POBP", "PINCP")
+
+M <- cor(acs[myvars], use="complete")
+corrplot(M, method="circle")
+M
+```
 
 EDA helper functions
 
@@ -748,7 +845,6 @@ j = makeFreqTable("POBP")
 head(j[order(-j$mean),],20)
 
 ```
-
 
 #Variable Transformations:
 
