@@ -856,6 +856,7 @@ par(mfrow=c(1,2))
 hist(model$residuals, main="Histogram of Model Residuals")
 qqnorm(model$residuals)
 qqline(model$residuals)
+par(mfrow=c(1,1))
 scatterplot(model$fitted.values, model$residuals,
             smoother = loessLine, cex = 0.5, pch = 19,
             smoother.args = list(lty = 1, lwd = 5),main = "Actual Vs Fitted Values")
@@ -865,13 +866,13 @@ residualPlots(model, main="Plots of Residuals vs Indepenent Variables")
   
 # Formal statistical tests of OLS assumptions
 statTests = as.data.frame(rbind(c("Linearity","Rainbow test",raintest(model)$p.value > .05),c("Normality of Residuals","Shapiro test",shapiro.test(residualsSubset)$p.value > .05),c(  "Homoskedasticity","Breusch-Pagan test",
-bptest(model)$p.value > .05),c("Autocorrelation","Durbin-Watson test",durbinWatsonTest(model)$p > .05)))
+bptest(model)$p.value > .05)))
 names(statTests) = c("Assumption","Test","Passed")
 
 # Exogeneity tests for each independent variable
 exoTests = sapply(model$model[-1],function(x){!checkModelSig(lm(model$residuals~x-1))})
 names(exoTests) = names(model$model[-1])
-exoTests = data.frame(Assumption = paste("Exogeneity for",names(exoTests)),Test="Regress residuals on variable",Passed=exoTests, row.names=NULL)
+exoTests = data.frame(Assumption = paste("Exogeneity for",names(exoTests)),Test="Regress residuals on variable",Passed=exoTests, row.names=NULL,stringsAsFactors = F)
 
 # Return combined table
 rbind(statTests,exoTests)
@@ -969,7 +970,7 @@ lmod5: Included ancestory - ANC1P - this further helps improve the model based o
 # creating first model with age, # of years of school
 lmod1 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin), data=acs.trainingdata)
 summary(lmod1)
-checkModelSig(lmod1)
+runDiagnostics(lmod1)
 
 # adding WKHP_bin - work hours per week to the model
 lmod2 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin + I(WKHP**2), data=acs.trainingdata)
