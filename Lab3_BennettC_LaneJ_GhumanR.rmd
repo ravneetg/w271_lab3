@@ -97,10 +97,9 @@ library(dummy)
 library(lattice)
 library(ggplot2)
 library(corrplot)
+library(lmtest)
 dev.off()
 rm(list=ls())
-
-#setwd("/Users/rghuman/Documents/ds/w271/assignments/lab3/w271_lab3")
 
 #load RData file
 load("w271_lab3.Rproj.RData")
@@ -683,61 +682,64 @@ b) records that have age <15 (as by default younger than 15 have no reported inc
 ```{r}
 acs <- acs[acs$PINCP > 0,]
 acs <- acs[!is.na(acs$PINCP),]
-acs = acs[acs$AGEP>=15,]#rg
+acs = acs[acs$AGEP>=15,]
 ```
 
+##Transformation rules and running EDA again after transformation
 ```{r}
 
 ########################################
 #Data Transformation for PINCP         #
 ########################################
-
-
-#acsTransformed <- data.frame(PINCP_log = log(acs$PINCP))
+#converting income to log
 acs$PINCP_log <- log(acs$PINCP)
 
 #Select a sample of the population to test everything on
 #Note: Recode all transformation steps against full dataset once finalized
-par(mfrow=c(1,1))
-hist(acs$PINCP_log)
+#rg par(mfrow=c(1,1))
+#rg hist(acs$PINCP_log)
+
+runEDA("PINCP_log")
+makeFreqTable("PINCP_log")
+makeScatterPlot("PINCP_log")
 
 ########################################
 #Data Transformation for AGEP          #
 ########################################
 acs$AGEP_bin = acs$AGEP
-hist(acs$AGEP_bin)
-summary(acs$AGEP_bin)
-describe(acs$AGEP_bin)
-length(na.omit(acs$AGEP_bin != 0))
+#rg hist(acs$AGEP_bin)
+#rg summary(acs$AGEP_bin)
+#rg describe(acs$AGEP_bin)
+#rg length(na.omit(acs$AGEP_bin != 0))
 
 # set starting age as 15 as records with age 14 or lower were filtered out
-acs$AGEP_bin <- cut(acs$AGEP, c(15, 20, 30, 40, 50, 60, 70, 80, 90, 100))#rg
+# setting bin ranges based on intuition - groups of age of people working
+acs$AGEP_bin <- cut(acs$AGEP, c(15,18, 22, 30, 40, 50, 60, 70, 80, 90, 100))#rg
 
-table(acs$AGEP_bin)
+runEDA("AGEP_bin")
+makeFreqTable("AGEP_bin")
+makeScatterPlot("AGEP_bin")
 
 ###MAR####
 acs$MAR_bin = factor(acs$MAR)#rg
 levels(acs$MAR_bin) = c("Married","Widowed","Divorced","Separated","Not Married")#rg
 
+runEDA("MAR_bin")
+makeFreqTable("MAR_bin")
+makeScatterPlot("MAR_bin")
 
 ###########################################################
 #Data Transformation for SCHL (Years of School Completed) #
 ###########################################################
 
-par(mfrow=c(1,1))
-acs$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 13, 16, 20, 22, 24))) #rg
-table(acs$SCHL_bin)
+#rg par(mfrow=c(1,1))
+acs$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 12, 16, 18, 20, 22, 24))) #rg
+#rg table(acs$SCHL_bin)
+runEDA("SCHL_bin")
+makeFreqTable("SCHL_bin")
+makeScatterPlot("SCHL_bin")
 
-ggplot(acs, aes(x=SCHL_bin)) + xlim(0,7) + geom_bar(stat="count", fill="#0072B2", colour="black") + ggtitle("Years of School")
-
-##############################################
-#Data Transformation for FCITP (Citizenship) #
-##############################################
-
-acs$FCITP_bin= acs$FCITP
-summary(acs$FCITP_bin)
-length(na.omit(acs$FCITP_bin != 0))
-hist(acs$FCITP_bin)
+#rg ggplot(acs, aes(x=SCHL_bin)) + xlim(0,7) + geom_bar(stat="count", fill="#0072B2", colour="black") + ggtitle("Years of School")
 
 ######################################################
 #Data Transformation for JWMNP (Travel Time to Work) #
@@ -745,19 +747,25 @@ hist(acs$FCITP_bin)
 
 acs$JWMNP_bin= acs$JWMNP
 acs$JWMNP_bin[is.na(acs$JWMNP)] = 0
-summary(acs$JWMNP_bin)
-length(na.omit(acs$JWMNP_bin != 0))
-length(acs$JWMNP_bin[acs$JWMNP_bin==0])
-hist(acs$JWMNP_bin)
+#rg summary(acs$JWMNP_bin)
+#rg length(na.omit(acs$JWMNP_bin != 0))
+#rg length(acs$JWMNP_bin[acs$JWMNP_bin==0])
+#rg hist(acs$JWMNP_bin)
+runEDA("JWMNP_bin")
+makeFreqTable("JWMNP_bin")
+makeScatterPlot("JWMNP_bin")
 
 ######################################################
 #Data Transformation for WKHP (Hours Worked per Week) #
 ######################################################
 acs$WKHP_bin= acs$WKHP
 acs$WKHP_bin[is.na(acs$WKHP)] = 0
-summary(acs$WKHP_bin)
-length(na.omit(acs$WKHP_bin != 0))
-hist(acs$WKHP_bin)
+#rg summary(acs$WKHP_bin)
+#rg length(na.omit(acs$WKHP_bin != 0))
+#rg hist(acs$WKHP_bin)
+runEDA("WKHP_bin")
+makeFreqTable("WKHP_bin")
+makeScatterPlot("WKHP_bin")
 
 ######################################################
 #Data Transformation for INDP:  #
@@ -765,8 +773,11 @@ hist(acs$WKHP_bin)
 acs$INDP_bin = factor(acs$INDP)#rg
 acs$INDP_bin=addNA(acs$INDP_bin) #rg
 
-summary(acsTransformed$INDP)
-plot(acsTransformed$INDP)
+#rg summary(acsTransformed$INDP)
+#rg plot(acsTransformed$INDP)
+runEDA("INDP_bin")
+makeFreqTable("INDP_bin")
+makeScatterPlot("INDP_bin")
 
 
 ######################################################
@@ -777,6 +788,9 @@ acs$LANP_bin="Non-English, Non-Spanish" #rg
 acs$LANP_bin[is.na(acs$LANP)]<- "English" #rg
 acs$LANP_bin[acs$LANP == 625] <- "Spanish" #rg
 acs$LANP_bin = factor(acs$LANP_bin) #rg
+runEDA("LANP_bin")
+makeFreqTable("LANP_bin")
+makeScatterPlot("LANP_bin")
 
 ######################################################
 #Data Transformation for ANC1P (Ancestry)            #
@@ -784,15 +798,21 @@ acs$LANP_bin = factor(acs$LANP_bin) #rg
 
 acs$ANC1P_bin = factor(acs$ANC1P) #rg
 acs$ANC1P_bin = addNA(acs$ANC1P_bin)#rg
+runEDA("ANC1P_bin")
+makeFreqTable("ANC1P_bin")
+makeScatterPlot("ANC1P_bin")
 
-length(is.null(acs$ANC1P_bin))
-summary(acs$ANC1P_bin)
+#rg length(is.null(acs$ANC1P_bin))
+#rg summary(acs$ANC1P_bin)
 
 ######################################################
 #Data Transformation for POBP (Place of Birth)       #
 ######################################################
 
 acs$POBP_US_bin = acs$POBP < 72 #changed from 73 to 72 #rg
+runEDA("POBP_US_bin")
+makeFreqTable("POBP_US_bin")
+makeScatterPlot("POBP_US_bin")
 
 ######################################################
 #Data Transformation for POWSP (Place of Work)       #
@@ -801,71 +821,35 @@ acs$POBP_US_bin = acs$POBP < 72 #changed from 73 to 72 #rg
 acs$POWSP_US_bin = acs$POWSP < 72 #changed from 73 to 72 #rg
 # filter so that place of work is in US 
 # (as there could be other confounding variables that affect international income)
+runEDA("POWSP_US_bin")
+makeFreqTable("POWSP_US_bin")
+makeScatterPlot("POWSP_US_bin")
 
 ```
 
 
 ##Model training
+This section helps split the dataset into training and test, so that back testing can be done on the  models for validation.
+Training data has about 2.2M records and Testdata has about 28k. There is a small version of TestData that has 60 records. A smaller version was created to help plot the points and easily have a visual reference between predicted and actual values.
 
 ##Split into training and test data
 ```{r}
+#create test dataset
+acs.testdata=acs[sample(nrow(acs),28910,replace=FALSE), ]
 
+#create small test dataset
+acs.small.testdata=acs.testdata[sample(nrow(acs.testdata), 100,replace=FALSE), ]
 
-acs.testdata=acs[sample(nrow(acs),2220000,replace=FALSE), ]
-acs.small.testdata=acs.testdata[sample(nrow(acs.testdata), 30,replace=FALSE), ]
+#create training dataset
 acs.trainingdata = anti_join(acs, acs.testdata, by =c("SERIALNO","SPORDER"))
 
 # test to make sure test data + training data = full dataset
 nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 
-# acspull <- acssmall[sample(1:nrow(acs), 500000, replace=FALSE),]#rg
-# 
-# head(acssmall)#rg
-# nrow(acssmall)#rg
-# 
-# acspull <- acssmall[sample(1:nrow(acssmall)), ]#rg
-# 
-# acsmod <- head(acspull,140000)#rg
-# acstest <- tail(acspull,5000)#rg
-
-modtest = lm(PINCP_log ~ AGEP_bin + SCHL_bin + 
-               JWMNP_bin + WKHP_bin + JWMNP_bin*WKHP_bin,
-             data=acs.trainingdata)#rg
-summary(modtest)
-
-plot(modtest)
-
-#predictions = predict(lm(log(PINCP) ~ factor(AGEP_bin) + factor(SCHL_bin) + JWMNP + WKHP + 
-#factor(INDP), acstest)) #rg
-
-#### code for predictions
-predictions = predict.lm(modtest,acs.small.testdata,se.fit = FALSE, interval = "confidence" )#rg
-
-### view side by side
-head(cbind(predictions,log(acs.testdata$PINCP)))#rg
-
-acs.testdata$fit=as.vector(predictions[,1])#rg
-acs.testdata$lwr=as.vector(predictions[,2])#rg
-acs.testdata$upr=as.vector(predictions[,3])#rg
-acs.testdata$lPINCP=log(acs.testdata$PINCP)#rg
-
-plot.data=(acs.testdata[c("lPINCP","fit","lwr","upr")])#rg
-plot.data=plot.data[complete.cases(plot.data),]#rg
-plot(log(plot.data$PINCP), type = "l",col="red")#rg
-lines(plot.data$fit,col="green")#rg
-head(plot.data)#rg
-
-#lines(plot.data$upr,col="blue")
-#lines(plot.data$lwr,col="blue")
-
-(meanDiff <- mean(log(acstest$PINCP) - predictions))
-
-predictions = predict(lm(log(PINCP) ~ WKHP, acstest))
-(meanDiff <- mean(log(acstest$PINCP) - predictions))
-
 ```
 
 ##Model Assumptions and Diagnostics
+This section helps create functions to run diagnostics
 
 ```{r}
 
@@ -992,12 +976,88 @@ The error term can't vary more for some values of our predictor variables than o
 
 The data is also collected at a person and household level. When a survey reaches a household, each person living in the household is asked to complete the form. It is likely that there may be more similarities than differences among individuals living together. Also, we chose the income person's income as the dependent variable because household income was not readily available for analysis.  This could introduce some bias in that certain people are likely benefiting from their partner's income, therefore their lifestyle-related survey responses may not be reflective of their personal income.
 
+##Modeling
+We start building a parcimonious model while selecting features based on EDA and intuition.
+
+H0: Null hypothesis is that slope is zero
+H1: Alternate hypothesis is that slope is not zero
+
+lmod1: Creating first model with # of years of school education and age of the person. Based on intuition and EDA, these seem like features that would influence income of a person.
+
+lmod2: Including WKHP (avg work hrs per week). The AIC value decreases showing that the new model is a better fit than the first model.
+
+lmod3: Including JWMNP (travel time to work). The AIC value decreases further.
+
+lmod4: Included MAR - marital status, and it further helps bring down the AIC score.
+
+lmod5: Included ancestory - ANC1P - this further helps improve the model based on AIC
 ```{r}
 
-#PLACE INITIAL MODELS HERE
-mod0 <- lm(acs)
-mod1 <- 
-mod2 <- 
+# creating first model with age, # of years of school
+lmod1 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin), data=acs.trainingdata)
+summary(lmod1)
+checkModelSig(lmod1)
+
+# adding WKHP_bin - work hours per week to the model
+lmod2 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin + I(WKHP**2), data=acs.trainingdata)
+summary(lmod2)
+checkModelSig(lmod2)
+
+# comparing second model with model 1 - checking fit
+AIC(lmod1,lmod2)
+
+# adding JWMNP - travel time to work to the model
+lmod3 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin, data=acs.trainingdata)
+summary(lmod2)
+checkModelSig(lmod2)
+
+# comparing current and previous model - checking fit
+AIC(lmod2,lmod3)
+
+
+# adding MAR - marital status
+lmod4 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin + MAR_bin, data=acs.trainingdata)
+summary(lmod4)
+checkModelSig(lmod4)
+
+# comparing current and previous model - checking fit
+AIC(lmod3,lmod4)
+
+# adding JWMNP - travel time to work to the model
+lmod5 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin + MAR_bin + ANC1P, data=acs.trainingdata)
+summary(lmod5)
+checkModelSig(lmod5)
+
+# comparing second model with model new model - checking fit
+AIC(lmod4,lmod5)
+
+# model 5 show a little improvement based on AIC
+
+################################################
+############ code for predictions ######## 
+################################################
+predictions = predict.lm(lmod5,acs.small.testdata,se.fit = FALSE, interval = "confidence" )
+
+acs.small.testdata$fit=as.vector(predictions[,1])
+acs.small.testdata$lwr=as.vector(predictions[,2])
+acs.small.testdata$upr=as.vector(predictions[,3])
+acs.small.testdata$lPINCP=log(acs.small.testdata$PINCP)
+
+#plotting results - actual vs fitted
+plot.data=(acs.small.testdata[c("lPINCP","fit","lwr","upr")])
+plot.data=plot.data[complete.cases(plot.data),]
+plot(plot.data$lPINCP, type = "l",col="red")
+lines(plot.data$fit,col="green")
+
+### view data side by side
+head(plot.data)
+
+
+##########################################
+##########################################
+##########################################
+##########################################
+##########################################
 
 #Utilize White Standard Error because of evidence of Heteroskedasticity
 mod0_robust <- coeftest(model0, vcov = vcovHC)
