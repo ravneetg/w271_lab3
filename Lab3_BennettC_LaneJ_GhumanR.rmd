@@ -677,7 +677,7 @@ After performing EDA on the raw dataset, we decided on the following actions:
 ##Filters
 This section applies filters on
 a) records that have an income of 0 or NA
-b) records that have age <15 (as by default younger than 15 have no reported income in the dataset)#rg
+b) records that have age <15 (as by default younger than 15 have no reported income in the dataset)
 
 ```{r}
 acs <- acs[acs$PINCP > 0,]
@@ -693,12 +693,6 @@ acs = acs[acs$AGEP>=15,]
 ########################################
 #converting income to log
 acs$PINCP_log <- log(acs$PINCP)
-
-#Select a sample of the population to test everything on
-#Note: Recode all transformation steps against full dataset once finalized
-#rg par(mfrow=c(1,1))
-#rg hist(acs$PINCP_log)
-
 runEDA("PINCP_log")
 makeFreqTable("PINCP_log")
 makeScatterPlot("PINCP_log")
@@ -707,22 +701,18 @@ makeScatterPlot("PINCP_log")
 #Data Transformation for AGEP          #
 ########################################
 acs$AGEP_bin = acs$AGEP
-#rg hist(acs$AGEP_bin)
-#rg summary(acs$AGEP_bin)
-#rg describe(acs$AGEP_bin)
-#rg length(na.omit(acs$AGEP_bin != 0))
 
 # set starting age as 15 as records with age 14 or lower were filtered out
 # setting bin ranges based on intuition - groups of age of people working
-acs$AGEP_bin <- cut(acs$AGEP, c(15,18, 22, 30, 40, 50, 60, 70, 80, 90, 100))#rg
+acs$AGEP_bin <- cut(acs$AGEP, c(15,18, 22, 30, 40, 50, 60, 70, 80, 90, 100))
 
 runEDA("AGEP_bin")
 makeFreqTable("AGEP_bin")
 makeScatterPlot("AGEP_bin")
 
 ###MAR####
-acs$MAR_bin = factor(acs$MAR)#rg
-levels(acs$MAR_bin) = c("Married","Widowed","Divorced","Separated","Not Married")#rg
+acs$MAR_bin = factor(acs$MAR)
+levels(acs$MAR_bin) = c("Married","Widowed","Divorced","Separated","Not Married")
 
 runEDA("MAR_bin")
 makeFreqTable("MAR_bin")
@@ -732,14 +722,10 @@ makeScatterPlot("MAR_bin")
 #Data Transformation for SCHL (Years of School Completed) #
 ###########################################################
 
-#rg par(mfrow=c(1,1))
-acs$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 12, 16, 18, 20, 22, 24))) #rg
-#rg table(acs$SCHL_bin)
+acs$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 12, 16, 18, 20, 22, 24))) 
 runEDA("SCHL_bin")
 makeFreqTable("SCHL_bin")
 makeScatterPlot("SCHL_bin")
-
-#rg ggplot(acs, aes(x=SCHL_bin)) + xlim(0,7) + geom_bar(stat="count", fill="#0072B2", colour="black") + ggtitle("Years of School")
 
 ######################################################
 #Data Transformation for JWMNP (Travel Time to Work) #
@@ -747,10 +733,6 @@ makeScatterPlot("SCHL_bin")
 
 acs$JWMNP_bin= acs$JWMNP
 acs$JWMNP_bin[is.na(acs$JWMNP)] = 0
-#rg summary(acs$JWMNP_bin)
-#rg length(na.omit(acs$JWMNP_bin != 0))
-#rg length(acs$JWMNP_bin[acs$JWMNP_bin==0])
-#rg hist(acs$JWMNP_bin)
 runEDA("JWMNP_bin")
 makeFreqTable("JWMNP_bin")
 makeScatterPlot("JWMNP_bin")
@@ -760,9 +742,6 @@ makeScatterPlot("JWMNP_bin")
 ######################################################
 acs$WKHP_bin= acs$WKHP
 acs$WKHP_bin[is.na(acs$WKHP)] = 0
-#rg summary(acs$WKHP_bin)
-#rg length(na.omit(acs$WKHP_bin != 0))
-#rg hist(acs$WKHP_bin)
 runEDA("WKHP_bin")
 makeFreqTable("WKHP_bin")
 makeScatterPlot("WKHP_bin")
@@ -770,11 +749,8 @@ makeScatterPlot("WKHP_bin")
 ######################################################
 #Data Transformation for INDP:  #
 ######################################################
-acs$INDP_bin = factor(acs$INDP)#rg
-acs$INDP_bin=addNA(acs$INDP_bin) #rg
-
-#rg summary(acsTransformed$INDP)
-#rg plot(acsTransformed$INDP)
+acs$INDP_bin = factor(acs$INDP)
+acs$INDP_bin=addNA(acs$INDP_bin) 
 runEDA("INDP_bin")
 makeFreqTable("INDP_bin")
 makeScatterPlot("INDP_bin")
@@ -783,11 +759,11 @@ makeScatterPlot("INDP_bin")
 ######################################################
 #Data Transformation for LANP (Language Spoken)      #
 ######################################################
-acs$LANP_bin="Non-English, Non-Spanish" #rg
+acs$LANP_bin="Non-English, Non-Spanish" 
 
-acs$LANP_bin[is.na(acs$LANP)]<- "English" #rg
-acs$LANP_bin[acs$LANP == 625] <- "Spanish" #rg
-acs$LANP_bin = factor(acs$LANP_bin) #rg
+acs$LANP_bin[is.na(acs$LANP)]<- "English" 
+acs$LANP_bin[acs$LANP == 625] <- "Spanish" 
+acs$LANP_bin = factor(acs$LANP_bin) 
 runEDA("LANP_bin")
 makeFreqTable("LANP_bin")
 makeScatterPlot("LANP_bin")
@@ -796,20 +772,17 @@ makeScatterPlot("LANP_bin")
 #Data Transformation for ANC1P (Ancestry)            #
 ######################################################
 
-acs$ANC1P_bin = factor(acs$ANC1P) #rg
-acs$ANC1P_bin = addNA(acs$ANC1P_bin)#rg
+acs$ANC1P_bin = factor(acs$ANC1P) 
+acs$ANC1P_bin = addNA(acs$ANC1P_bin)
 runEDA("ANC1P_bin")
 makeFreqTable("ANC1P_bin")
 makeScatterPlot("ANC1P_bin")
-
-#rg length(is.null(acs$ANC1P_bin))
-#rg summary(acs$ANC1P_bin)
 
 ######################################################
 #Data Transformation for POBP (Place of Birth)       #
 ######################################################
 
-acs$POBP_US_bin = acs$POBP < 72 #changed from 73 to 72 #rg
+acs$POBP_US_bin = acs$POBP < 72 #changed from 73 to 72 
 runEDA("POBP_US_bin")
 makeFreqTable("POBP_US_bin")
 makeScatterPlot("POBP_US_bin")
@@ -818,7 +791,7 @@ makeScatterPlot("POBP_US_bin")
 #Data Transformation for POWSP (Place of Work)       #
 ######################################################
 
-acs$POWSP_US_bin = acs$POWSP < 72 #changed from 73 to 72 #rg
+acs$POWSP_US_bin = acs$POWSP < 72 #changed from 73 to 72 
 # filter so that place of work is in US 
 # (as there could be other confounding variables that affect international income)
 runEDA("POWSP_US_bin")
@@ -1024,13 +997,12 @@ checkModelSig(lmod4)
 AIC(lmod3,lmod4)
 
 # adding JWMNP - travel time to work to the model
-lmod5 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin + MAR_bin + ANC1P, data=acs.trainingdata)
+lmod5 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin + MAR_bin + ANC1P + LANP_bin, data=acs.trainingdata)
 summary(lmod5)
 checkModelSig(lmod5)
 
 # comparing second model with model new model - checking fit
 AIC(lmod4,lmod5)
-
 # model 5 show a little improvement based on AIC
 
 ################################################
@@ -1053,7 +1025,7 @@ lines(plot.data$fit,col="green")
 head(plot.data)
 
 
-##########################################
+####UPDATES-END
 ##########################################
 ##########################################
 ##########################################
