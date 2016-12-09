@@ -876,9 +876,10 @@ nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 ##################################################################################################################
 #                                                                                                                #
 # Helper Functions for Model Evaluation                                                                          #
-#   The below helper function will run cross validation with a fitted model and return the mean squared error.   #
+#   The below helper function will run cross validation with a fitted model and return the mean squared error.  #
 #                                                                                                                #
 ##################################################################################################################
+
 runCV =function(model){
   
   predictions = predict.lm(model,acs.testdata, interval = "confidence" )
@@ -896,8 +897,27 @@ MSE = mean((predictions - acs.testdata$PINCP)^2,na.rm = T)
   
 return(paste("Mean Squared Error:",MSE))
 }
-```
 
+#Helper function to check if a regression model is statistically significant.
+checkModelSig = function(model){
+  
+  f = summary(model)$fstatistic
+p = pf(f[1],f[2],f[3],lower.tail = F)
+return(p<.05)
+}
+
+#Function to check model assumptions, plot residual charts
+runDiagnostics = function(model){
+
+# The Shapiro-Wilk test of normality can only handle 5000 data points.
+# After 5000, the test is no longer applicable.  
+if(nrow(model$model) < 5000)  {
+shapiroResult = shapiro.test(model$residuals)$p.value > .05
+  }else{
+shapiroResult = "N/A"
+}
+
+```
 
 ##Model Assumptions and Diagnostics
 
