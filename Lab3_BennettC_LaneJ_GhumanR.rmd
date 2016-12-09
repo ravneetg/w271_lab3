@@ -677,8 +677,8 @@ After performing EDA on the raw dataset, we further narrowed down which variable
 
 It was decided that the overall data set needed to be narrowed down to include only records that meet the following criteria:
 
-a.) Records that have an income that was not N/A and was greater than 0
-b.) Records where the survey respondants had an ave value greater than or equal to 15
+* Records that have an income that was not N/A and was greater than 0
+* Records where the survey respondants had an ave value greater than or equal to 15
 
 ##Data Transformation and EDA of Transformed Variables
 
