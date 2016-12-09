@@ -876,7 +876,7 @@ nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 ##################################################################################################################
 #                                                                                                                #
 # Helper Functions for Model Evaluation                                                                          #
-#   The below helper function will run cross validation with a fitted model and return the mean squared error.  #
+#   The below helper function will run cross validation with a fitted model and return the mean squared error.   #
 #                                                                                                                #
 ##################################################################################################################
 runCV =function(model){
