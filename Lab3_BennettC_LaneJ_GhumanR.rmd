@@ -1090,9 +1090,11 @@ runCV(lmod1)
 
 ### Attempt 2: PINCP ~ AGEP + SCHL + WKHP
 
+Model 2 (lmod2): Model 2 is actually the result of quite a few iterations of models, each testing various transformations of the Work Hours Per Week variable. After quite a few tests, we identified the following transformations for the WKHP (work hours per week) variable as having the best fit to the training data:
 
-lmod2: Including WKHP (avg work hrs per week). The AIC value decreases showing that the new model is a better fit than the first model.
+PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin + I(WKHP_bin**2)
 
+Results: By adding the work hours per week variable, the R-squred jumped up from 0.27 to 0.44, and the overall model significance remained highly significant at 2.2e-16. The workhours $$WKHP_2$$ variable has a negative coefficient of -1.55e-04, with a robust standard error of 2.05e-06. The AIC run comparing model 1 to model 2 showed a significant drop in the Akaike value, indicating that Model 2 is an improvement over Model 1.
 
 ```{r}
 
@@ -1100,13 +1102,11 @@ lmod2: Including WKHP (avg work hrs per week). The AIC value decreases showing t
 lmod2 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin + I(WKHP_bin**2), data=acs.trainingdata)
 summary(lmod2)
 mod2_robust <- coeftest(lmod2, vcov = vcovHC)
+mod2_robust
 AIC(lmod1,lmod2)
 waldtest(lmod1, lmod2)
 runDiagnostics(lmod2)
 
-```
-
-```{r}
 runCV(lmod2)
 
 ```
