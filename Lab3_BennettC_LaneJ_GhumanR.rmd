@@ -1113,7 +1113,9 @@ runCV(lmod2)
 
 ### Attempt 3: PINCP ~ AGEP + SCHL + WKHP + JWMNP
 
-Model 3(lmod3): In Model 3 we add in the Travel Time to Work (JWMNP) variable. The R-squared value increases slightly to 0.45, and the overall model remains highly significant. The AIC test indicates a lower Akaike score for model 3, so we decided to keep this variable in the model.
+Model 3(lmod3): In Model 3 we added in the Travel Time to Work (JWMNP) variable. 
+
+Results: The R-squared value increases slightly to 0.45, and the overall model remains highly significant. The AIC test indicates a lower Akaike score for model 3, so we decided to keep this variable in the model.
 
 ```{r}
 # adding JWMNP - travel time to work to the model
