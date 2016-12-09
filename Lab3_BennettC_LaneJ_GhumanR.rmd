@@ -1033,46 +1033,58 @@ The error term can't vary more for some values of our predictor variables than o
 
 The data is also collected at a person and household level. When a survey reaches a household, each person living in the household is asked to complete the form. It is likely that there may be more similarities than differences among individuals living together. Also, we chose the income person's income as the dependent variable because household income was not readily available for analysis.  This could introduce some bias in that certain people are likely benefiting from their partner's income, therefore their lifestyle-related survey responses may not be reflective of their personal income.
 
-
 ##Modeling
-We start building a parcimonious model while selecting features based on EDA and intuition.
+
+The strategy we used in developing the best possible regression model was to first, establish a baseline of a simple mean using the log of Income as the dependent variable.  Then we began adding predictor variables one-by-one and evaluated the R-squared and the AIC to determine which additions (or transformation) increased fit, while reducing the models ability to be parsimonious. We also evaluated whether performing a log transformation on the Income variable helped with the improving the model's predictive abilities.
 
 H0: Null hypothesis is that slope is zero
 H1: Alternate hypothesis is that slope is not zero
 
-
 ### Baseline: PINCP mean
 
-First, let's estabalish a baseline of just using the mean of PINCP_l. 
+First, let's estabalish a baseline of just using the mean of PINCP_l (log of Income). 
 
 ```{r}
+
+# Run a regression model using the mean of the log of Personal Income
 lmod0 = lm(PINCP_log~1,data=acs.trainingdata)
 summary(lmod0)
 mod0_robust <- coeftest(lmod0, vcov = vcovHC)
 runDiagnostics(lmod0)
 runCV(lmod0)
+
 ```
-
-
 
 ### Attempt 1: PINCP ~ AGEP + SCHL
 
-lmod1: Creating first model with # of years of school education and age of the person. Based on intuition and EDA, these seem like features that would influence income of a person.
+Now that we have established the mean for both the Income and the Log of Income, we begin to add predictor variables into our model. We actually added in each predictor separately, running AIC between each, to reach our final model.  However, we are only including the more significant additions in this report.
+
+Model 1 (lmod1): Creating the first model with the number of years of school education and age of the person. Based on intuition and EDA, these seem like features that would influence income of a person.
+
+Model 1b (lmod1b): We also ran this same model on the raw Income data to validate that using the log transform on the Income dependent variable is a good decision.
+
+Results: Model 1 yielded an R-squared value of 0.26 with an overall significant p-value.  It should be noted that largely due to the volume of the data set, every model we generated yielded a significant p-value, so we had to focus most of our attention on the AIc and the practical significance of the results. Additionally, Model 1 returned a much lower Akaike score than the mean model (Model 0). Model 1b, whose primary purpose was to evaluate whether a log transformation of Income was needed, resulted in a significantly lower R-squared value (0.19). An AIC was run to compare Model 1 with Model 1b, and it returned a much worse Akaike value for Model 1b. This confirms our decision to utilize the log transformation of our dependent variable.
 
 ```{r}
+
 # creating first model with age, # of years of school
 lmod1 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin), data=acs.trainingdata)
 summary(lmod1)
 mod1_robust <- coeftest(lmod1, vcov = vcovHC)
+mod1_robust
 AIC(lmod0,lmod1)
 #waldtest(lmod0, lmod1)
-
 runDiagnostics(lmod1)
 
-```
+# run the same model, but using the raw income data without the log transformation
+lmod1b = lm(PINCP ~ AGEP_bin + factor(SCHL_bin), data=acs.trainingdata)
+summary(lmod1b)
+mod1b_robust <- coeftest(lmod1b, vcov = vcovHC)
+mod1b_robust
+AIC(lmod1,lmod1b)
+#waldtest(lmod0, lmod1)
+runDiagnostics(lmod1)
 
-
-```{r}
 runCV(lmod1)
 ```
 
