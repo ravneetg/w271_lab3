@@ -876,7 +876,10 @@ nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 ##################################################################################################################
 #                                                                                                                #
 # Helper Functions for Model Evaluation                                                                          #
-#   The below helper function will run cross validation with a fitted model and return the mean squared error.  #
+#  The below helper function will run cross validation with a fitted model and return the mean squared error.    #
+#  We will run each of our models through the following runDiagnostics helper function.  This function will use  #
+#  formal statistical tests to validate most of the OLS assumptions. The function will also produce residual and #
+#  other diagnostic plots when the trainning set is small enough.                                                #
 #                                                                                                                #
 ##################################################################################################################
 
@@ -915,6 +918,45 @@ if(nrow(model$model) < 5000)  {
 shapiroResult = shapiro.test(model$residuals)$p.value > .05
   }else{
 shapiroResult = "N/A"
+}
+
+# Depending on the power of the computer, R may not able to plot models with too many training points.  
+# So only draw plots for models with less than 50000 data points (number choosen arbitrarily)
+# We can still test the OLS assumptions though with statistical tests 
+  if(nrow(model$model) < 50000)  {
+
+par(mfrow=c(1,2))
+hist(model$residuals, main="Histogram of Model Residuals")
+qqnorm(model$residuals)
+qqline(model$residuals)
+scatterplot(exp(model$fitted.values),exp(model$residuals),
+            smoother = loessLine, cex = 0.5, pch = 19,
+            smoother.args = list(lty = 1, lwd = 5),xlab="Fitted Values",ylab="Residauls",main = "Residuals Vs Fitted Values")
+residualPlots(model, main="Plots of Residuals vs Indepenent Variables")
+par(mfrow=c(2,1))
+scatterplot(exp(model$model[0,]),exp(model$fitted.values), 
+            smoother = loessLine, cex = 0.5, pch = 19,
+            smoother.args = list(lty = 1, lwd = 5),xlab="Actual PINCP",ylab="Fitted PINCP",main = "Actual Vs Fitted Values",boxplots="")
+scatterplot( model$model[,0],model$fitted.values,
+            smoother = loessLine, cex = 0.5, pch = 19,
+            smoother.args = list(lty = 1, lwd = 5),xlab="Actual PINCP Log Scale",ylab="Fitted PINCP Log Scale",main = "Actual Vs Fitted Values Log Scale",boxplots="")
+}
+  
+# Formal statistical tests of OLS assumptions
+statTests = as.data.frame(rbind(c("Linearity","Rainbow test",raintest(model)$p.value > .05),c("Normality of Residuals","Shapiro test",shapiroResult),c(  "Homoskedasticity","Breusch-Pagan test",
+bptest(model)$p.value > .05)),stringsAsFactors=F)
+names(statTests) = c("Assumption","Test","Passed")
+
+# Exogeneity tests for each independent variable
+exoTests = sapply(model$model[-1],function(x){!checkModelSig(lm(model$residuals~x-1))})
+names(exoTests) = names(model$model[-1])
+if(length(exoTests)>0){
+exoTests = data.frame(Assumption = paste("Exogeneity for",names(exoTests)),Test="Regress residuals on variable",Passed=exoTests, row.names=NULL,stringsAsFactors = F)
+
+# Return combined table
+statTests = rbind(statTests,exoTests)
+}
+statTests
 }
 
 ```
@@ -990,54 +1032,6 @@ The error term can't vary more for some values of our predictor variables than o
 ###Other sources of bias or error:
 
 The data is also collected at a person and household level. When a survey reaches a household, each person living in the household is asked to complete the form. It is likely that there may be more similarities than differences among individuals living together. Also, we chose the income person's income as the dependent variable because household income was not readily available for analysis.  This could introduce some bias in that certain people are likely benefiting from their partner's income, therefore their lifestyle-related survey responses may not be reflective of their personal income.
-
-###Diagnostics function
-
-We will run each of our models through the following runDiagnostics helper function.  This function will use formal statistical tests to validate most of the OLS assumptions. The function will also produce residual and other diagnostic plots when the trainning set is small enough.
-
-```{r}
-  
-# Depending on the power of the computer, R may not able to plot models with too many training points.  
-# So only draw plots for models with less than 50000 data points (number choosen arbitrarily)
-# We can still test the OLS assumptions though with statistical tests 
-  if(nrow(model$model) < 50000)  {
-
-par(mfrow=c(1,2))
-hist(model$residuals, main="Histogram of Model Residuals")
-qqnorm(model$residuals)
-qqline(model$residuals)
-scatterplot(exp(model$fitted.values),exp(model$residuals),
-            smoother = loessLine, cex = 0.5, pch = 19,
-            smoother.args = list(lty = 1, lwd = 5),xlab="Fitted Values",ylab="Residauls",main = "Residuals Vs Fitted Values")
-residualPlots(model, main="Plots of Residuals vs Indepenent Variables")
-par(mfrow=c(2,1))
-scatterplot(exp(model$model[0,]),exp(model$fitted.values), 
-            smoother = loessLine, cex = 0.5, pch = 19,
-            smoother.args = list(lty = 1, lwd = 5),xlab="Actual PINCP",ylab="Fitted PINCP",main = "Actual Vs Fitted Values",boxplots="")
-scatterplot( model$model[,0],model$fitted.values,
-            smoother = loessLine, cex = 0.5, pch = 19,
-            smoother.args = list(lty = 1, lwd = 5),xlab="Actual PINCP Log Scale",ylab="Fitted PINCP Log Scale",main = "Actual Vs Fitted Values Log Scale",boxplots="")
-}
-  
-# Formal statistical tests of OLS assumptions
-statTests = as.data.frame(rbind(c("Linearity","Rainbow test",raintest(model)$p.value > .05),c("Normality of Residuals","Shapiro test",shapiroResult),c(  "Homoskedasticity","Breusch-Pagan test",
-bptest(model)$p.value > .05)),stringsAsFactors=F)
-names(statTests) = c("Assumption","Test","Passed")
-
-# Exogeneity tests for each independent variable
-exoTests = sapply(model$model[-1],function(x){!checkModelSig(lm(model$residuals~x-1))})
-names(exoTests) = names(model$model[-1])
-if(length(exoTests)>0){
-exoTests = data.frame(Assumption = paste("Exogeneity for",names(exoTests)),Test="Regress residuals on variable",Passed=exoTests, row.names=NULL,stringsAsFactors = F)
-
-# Return combined table
-statTests = rbind(statTests,exoTests)
-}
-statTests
-}
-
-```
-
 
 
 ##Modeling
