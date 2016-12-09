@@ -653,36 +653,40 @@ M
 
 ```
 
-#Variable Transformations:
+##Variable Transformations
 
-After performing EDA on the raw dataset, we decided on the following actions:
+After performing EDA on the raw dataset, we further narrowed down which variables we would test in our regression model.
 
-* PINCP: Dependent variable.  Transform with Log
-* POWSP: Independent variable.  Transform to binary - US/Non-US
-* POBP: Independent variable.  Transform to binary - US/Non-US
-* AGP: Independent variable.  Bucket by decade
-* SEX: Independent variable. 
-* MAR: Independent variable.  Transform to categorical
-* SCHL: Independent variable  Bucket by (No schooling, Some Highschool, GED, Associates Degree, Bachelors Degree, Masters Degree or higher)
-* INDP: Independent variable  Transform to categorical
-* ANC1P: Independent variable  Transform to categorical
-* LANP: Independent variable  Bucket by (English, Spanish, Other buckets)
-* FCITP: Independent variable
-* JWMNP: Independent variable
-* WKHP: Independent variable
+* Independent Variable
+    * PINCP (Income): Possibly will need to utilize a logarithmic transformation
+* Potential Dependent Variables
+    * POWSP (Place of Work): Transform to binary - US/Non-US
+    * POBP  (Place of Birth): Transform to binary - US/Non-US
+    * AGP (Age): Bucket by decade
+    * SEX (Sex): No transformation needed 
+    * MAR (Marital Status): Transform to factor/categorical
+* SCHL (School Completed): Bucket by (No schooling, Some Highschool, GED, Associates Degree, Bachelors Degree, Masters Degree or higher)
+* INDP (Employment Industry Code): Transform to factor/categorical
+* ANC1P (Ancestry): Transform to factor/categorical
+* LANP (Language Spoken at Home): Bucket by (English, Spanish, Other buckets)
+* FCITP (Citizenship): Transform to factor/categorical
+* JWMNP (Drive Time to Work): No transformation
+* WKHP (Work Hours per Week): Possible exponential transformation to accentuate the extreme values
 
-##
+###Overall Dataset Filters
 
+It was decided that the overall data set needed to be narrowed down to include only records that meet the following criteria:
 
-##Filters
-This section applies filters on
-a) records that have an income of 0 or NA
-b) records that have age <15 (as by default younger than 15 have no reported income in the dataset)
+a.) Records that have an income that was not N/A and was greater than 0
+b.) Records where the survey respondants had an ave value greater than or equal to 15
 
 ```{r}
+
+#Filter the data setup to include only income > 0, income != N/A, and Age >= 15
 acs <- acs[acs$PINCP > 0,]
 acs <- acs[!is.na(acs$PINCP),]
 acs = acs[acs$AGEP>=15,]
+
 ```
 
 ##Transformation rules and running EDA again after transformation
