@@ -841,13 +841,20 @@ makeFreqTable("POWSP_US_bin")
 makeScatterPlot("POWSP_US_bin")
 
 ```
+##Model Development
 
-##Model training
-This section helps split the dataset into training and test, so that back testing can be done on the  models for validation.
-Training data has about 2.2M records and Testdata has about 28k. There is a small version of TestData that has 60 records. A smaller version was created to help plot the points and easily have a visual reference between predicted and actual values.
+The first step will be to randomly sample our data into two groups, a training data set and a test data set. This will allow us to accurately conduct back-testing with our models against the test set. The training data set will have approximately 2.2 million records, and the test data set will have approximately 28 thousand records. A smaller version of the test set, with approximately 60 records, will be used to plot comparison points and to generate visual referrences between the predicted and actual values.
 
 ###Split into training and test data
+
 ```{r}
+
+#########################################################################################################
+#                                                                                                       #
+# Select out a training set and test sets                                                               #
+#                                                                                                       #
+#########################################################################################################
+
 #create test dataset
 acs.testdata=acs[sample(nrow(acs),28910,replace=FALSE), ]
 
@@ -857,15 +864,21 @@ acs.small.testdata=acs.testdata[sample(nrow(acs.testdata), 100,replace=FALSE), ]
 #create training dataset
 acs.trainingdata = anti_join(acs, acs.testdata, by =c("SERIALNO","SPORDER"))
 
-# test to make sure test data + training data = full dataset
+#Verify quantity - ensure that test data + training data = full dataset
 nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 
 ```
 
-The below helper function will run cross validation with a fitted model and return the mean squared error.
-  
+###Model Evaluation Helper Functions
 
 ```{r}
+
+##################################################################################################################
+#                                                                                                                #
+# Helper Functions for Model Evaluation                                                                          #
+#   The below helper function will run cross validation with a fitted model and return the mean squared error.  #
+#                                                                                                                #
+##################################################################################################################
 runCV =function(model){
   
   predictions = predict.lm(model,acs.testdata, interval = "confidence" )
