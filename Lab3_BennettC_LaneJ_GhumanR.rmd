@@ -996,29 +996,8 @@ The data is also collected at a person and household level. When a survey reache
 We will run each of our models through the following runDiagnostics helper function.  This function will use formal statistical tests to validate most of the OLS assumptions. The function will also produce residual and other diagnostic plots when the trainning set is small enough.
 
 ```{r}
-
-#Helper function to check if a regression model is statistically significant.
-checkModelSig = function(model){
   
-  f = summary(model)$fstatistic
-p = pf(f[1],f[2],f[3],lower.tail = F)
-return(p<.05)
-}
-
-
-#Function to check model assumptions, plot residual charts
-runDiagnostics = function(model){
-
-# The Shapiro-Wilk test of normality can only handle 5000 data points.
-# After 5000, the test is no longer applicable.  
-if(nrow(model$model) < 5000)  {
-shapiroResult = shapiro.test(model$residuals)$p.value > .05
-  }else{
-shapiroResult = "N/A"
-}
-
-  
-# At least for my computer, R is not able to plot models with too many training points.  
+# Depending on the power of the computer, R may not able to plot models with too many training points.  
 # So only draw plots for models with less than 50000 data points (number choosen arbitrarily)
 # We can still test the OLS assumptions though with statistical tests 
   if(nrow(model$model) < 50000)  {
