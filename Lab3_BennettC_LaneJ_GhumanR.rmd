@@ -809,7 +809,7 @@ makeScatterPlot("POWSP_US_bin")
 This section helps split the dataset into training and test, so that back testing can be done on the  models for validation.
 Training data has about 2.2M records and Testdata has about 28k. There is a small version of TestData that has 60 records. A smaller version was created to help plot the points and easily have a visual reference between predicted and actual values.
 
-##Split into training and test data
+###Split into training and test data
 ```{r}
 #create test dataset
 acs.testdata=acs[sample(nrow(acs),28910,replace=FALSE), ]
@@ -825,64 +825,31 @@ nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 
 ```
 
-##Model Assumptions and Diagnostics
-This section helps create functions to run diagnostics
+The below helper function will run cross validation with a fitted model and return the mean squared error.
+  
 
 ```{r}
-
-#Helper function to check if a regression model is statistically significant.
-checkModelSig = function(model){
+runCV =function(model){
   
-  f = summary(model)$fstatistic
-p = pf(f[1],f[2],f[3],lower.tail = F)
-return(p<.05)
-}
+  predictions = predict.lm(model,acs.testdata, interval = "confidence" )
+  predictions = exp(as.vector(predictions[,1]))
+par(mfrow=c(2,1))
+
+    scatterplot(acs.testdata$PINCP,predictions, 
+            smoother = loessLine, cex = 0.5, pch = 19, xlab = "Actual PINCP", ylab = "Predicted PINCP",smoother.args = list(lty = 1, lwd = 5),main = "Predicted Vs Actual PINCP: Test Data",boxplots="")
+    
+    scatterplot( acs.testdata$PINCP,predictions,
+            smoother = loessLine, cex = 0.5, pch = 19, xlab = "Actual PINCP Log Scale", ylab = "Predicted PINCP Log Scale",smoother.args = list(lty = 1, lwd = 5),main = "Log Scale Predicted Vs Actual PINCP: Test Data",log="xy",boxplots="")
 
 
-#Function to check model assumptions, plot residual charts
-runDiagnostics = function(model){
-
-# The Shapiro-Wilk test of normality can only handle 5000 data points.
-# Take a random sample of residuals if there are more than 5000 data points
-if(nrow(model$model) < 5000)  {
-    residualsSubset = model$residuals
-}else{
-    residualsSubset = sample(model$residuals,5000)
-
-}
-
+MSE = mean((predictions - acs.testdata$PINCP)^2,na.rm = T)
   
-# At least for my computer, R is not able to plot models with too many training points.  
-# So only draw plots for models with less than 50000 data points (number choosen arbitrarily)
-# We can still test the OLS assumptions though with statistical tests 
-if(nrow(model$model) < 50000){
-par(mfrow=c(1,2))
-hist(model$residuals, main="Histogram of Model Residuals")
-qqnorm(model$residuals)
-qqline(model$residuals)
-par(mfrow=c(1,1))
-scatterplot(model$fitted.values, model$residuals,
-            smoother = loessLine, cex = 0.5, pch = 19,
-            smoother.args = list(lty = 1, lwd = 5),main = "Actual Vs Fitted Values")
-residualPlots(model, main="Plots of Residuals vs Indepenent Variables")
-
-}
-  
-# Formal statistical tests of OLS assumptions
-statTests = as.data.frame(rbind(c("Linearity","Rainbow test",raintest(model)$p.value > .05),c("Normality of Residuals","Shapiro test",shapiro.test(residualsSubset)$p.value > .05),c(  "Homoskedasticity","Breusch-Pagan test",
-bptest(model)$p.value > .05)))
-names(statTests) = c("Assumption","Test","Passed")
-
-# Exogeneity tests for each independent variable
-exoTests = sapply(model$model[-1],function(x){!checkModelSig(lm(model$residuals~x-1))})
-names(exoTests) = names(model$model[-1])
-exoTests = data.frame(Assumption = paste("Exogeneity for",names(exoTests)),Test="Regress residuals on variable",Passed=exoTests, row.names=NULL,stringsAsFactors = F)
-
-# Return combined table
-rbind(statTests,exoTests)
+return(paste("Mean Squared Error:",MSE))
 }
 ```
 
+
+##Model Assumptions and Diagnostics
 
 ###Overall Observations on Statistical Validity of the Model
 
@@ -954,142 +921,209 @@ The error term can't vary more for some values of our predictor variables than o
 
 The data is also collected at a person and household level. When a survey reaches a household, each person living in the household is asked to complete the form. It is likely that there may be more similarities than differences among individuals living together. Also, we chose the income person's income as the dependent variable because household income was not readily available for analysis.  This could introduce some bias in that certain people are likely benefiting from their partner's income, therefore their lifestyle-related survey responses may not be reflective of their personal income.
 
+###Diagnostics function
+
+We will run each of our models through the following runDiagnostics helper function.  This function will use formal statistical tests to validate most of the OLS assumptions. The function will also produce residual and other diagnostic plots when the trainning set is small enough.
+
+```{r}
+
+#Helper function to check if a regression model is statistically significant.
+checkModelSig = function(model){
+  
+  f = summary(model)$fstatistic
+p = pf(f[1],f[2],f[3],lower.tail = F)
+return(p<.05)
+}
+
+
+#Function to check model assumptions, plot residual charts
+runDiagnostics = function(model){
+
+# The Shapiro-Wilk test of normality can only handle 5000 data points.
+# After 5000, the test is no longer applicable.  
+if(nrow(model$model) < 5000)  {
+shapiroResult = shapiro.test(model$residuals)$p.value > .05
+  }else{
+shapiroResult = "N/A"
+}
+
+  
+# At least for my computer, R is not able to plot models with too many training points.  
+# So only draw plots for models with less than 50000 data points (number choosen arbitrarily)
+# We can still test the OLS assumptions though with statistical tests 
+  if(nrow(model$model) < 50000)  {
+
+par(mfrow=c(1,2))
+hist(model$residuals, main="Histogram of Model Residuals")
+qqnorm(model$residuals)
+qqline(model$residuals)
+scatterplot(exp(model$fitted.values),exp(model$residuals),
+            smoother = loessLine, cex = 0.5, pch = 19,
+            smoother.args = list(lty = 1, lwd = 5),xlab="Fitted Values",ylab="Residauls",main = "Residuals Vs Fitted Values")
+residualPlots(model, main="Plots of Residuals vs Indepenent Variables")
+par(mfrow=c(2,1))
+scatterplot(exp(model$model[0,]),exp(model$fitted.values), 
+            smoother = loessLine, cex = 0.5, pch = 19,
+            smoother.args = list(lty = 1, lwd = 5),xlab="Actual PINCP",ylab="Fitted PINCP",main = "Actual Vs Fitted Values",boxplots="")
+scatterplot( model$model[,0],model$fitted.values,
+            smoother = loessLine, cex = 0.5, pch = 19,
+            smoother.args = list(lty = 1, lwd = 5),xlab="Actual PINCP Log Scale",ylab="Fitted PINCP Log Scale",main = "Actual Vs Fitted Values Log Scale",boxplots="")
+}
+  
+# Formal statistical tests of OLS assumptions
+statTests = as.data.frame(rbind(c("Linearity","Rainbow test",raintest(model)$p.value > .05),c("Normality of Residuals","Shapiro test",shapiroResult),c(  "Homoskedasticity","Breusch-Pagan test",
+bptest(model)$p.value > .05)),stringsAsFactors=F)
+names(statTests) = c("Assumption","Test","Passed")
+
+# Exogeneity tests for each independent variable
+exoTests = sapply(model$model[-1],function(x){!checkModelSig(lm(model$residuals~x-1))})
+names(exoTests) = names(model$model[-1])
+if(length(exoTests)>0){
+exoTests = data.frame(Assumption = paste("Exogeneity for",names(exoTests)),Test="Regress residuals on variable",Passed=exoTests, row.names=NULL,stringsAsFactors = F)
+
+# Return combined table
+statTests = rbind(statTests,exoTests)
+}
+statTests
+}
+
+```
+
+
+
 ##Modeling
 We start building a parcimonious model while selecting features based on EDA and intuition.
 
 H0: Null hypothesis is that slope is zero
 H1: Alternate hypothesis is that slope is not zero
 
+
+### Baseline: PINCP mean
+
+First, let's estabalish a baseline of just using the mean of PINCP_l. 
+
+```{r}
+lmod0 = lm(PINCP_log~1,data=acs.trainingdata)
+summary(lmod0)
+mod0_robust <- coeftest(lmod0, vcov = vcovHC)
+runDiagnostics(lmod0)
+runCV(lmod0)
+```
+
+
+
+### Attempt 1: PINCP ~ AGEP + SCHL
+
 lmod1: Creating first model with # of years of school education and age of the person. Based on intuition and EDA, these seem like features that would influence income of a person.
+
+```{r}
+# creating first model with age, # of years of school
+lmod1 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin), data=acs.trainingdata)
+summary(lmod1)
+mod1_robust <- coeftest(lmod1, vcov = vcovHC)
+AIC(lmod0,lmod1)
+#waldtest(lmod0, lmod1)
+
+runDiagnostics(lmod1)
+
+```
+
+
+```{r}
+runCV(lmod1)
+```
+
+### Attempt 2: PINCP ~ AGEP + SCHL + WKHP
+
 
 lmod2: Including WKHP (avg work hrs per week). The AIC value decreases showing that the new model is a better fit than the first model.
 
+
+```{r}
+
+# adding WKHP_bin - work hours per week to the model
+lmod2 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin + I(WKHP_bin**2), data=acs.trainingdata)
+summary(lmod2)
+mod2_robust <- coeftest(lmod2, vcov = vcovHC)
+AIC(lmod1,lmod2)
+waldtest(lmod1, lmod2)
+runDiagnostics(lmod2)
+
+```
+
+```{r}
+runCV(lmod2)
+
+```
+
+### Attempt 3: PINCP ~ AGEP + SCHL + WKHP + JWMNP
+
+
 lmod3: Including JWMNP (travel time to work). The AIC value decreases further.
 
+```{r}
+# adding JWMNP - travel time to work to the model
+lmod3 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP_bin**2) + JWMNP_bin, data=acs.trainingdata)
+summary(lmod3)
+mod3_robust <- coeftest(lmod3, vcov = vcovHC)
+AIC(lmod2,lmod3)
+waldtest(lmod2, lmod3)
+runDiagnostics(lmod3)
+
+```
+
+
+```{r}
+runCV(lmod3)
+```
+
+
+### Attempt 4: PINCP ~ AGEP + SCHL + WKHP + JWMNP + MAR
+
+
 lmod4: Included MAR - marital status, and it further helps bring down the AIC score.
+
+```{r}
+# adding MAR - marital status
+lmod4 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP_bin**2) + JWMNP_bin + MAR_bin, data=acs.trainingdata)
+summary(lmod4)
+mod4_robust <- coeftest(lmod4, vcov = vcovHC)
+AIC(lmod3,lmod4)
+waldtest(lmod3, lmod4)
+runDiagnostics(lmod4)
+```
+
+
+```{r}
+runCV(lmod4)
+```
+
+
+### Attempt 5: PINCP ~ AGEP + SCHL + WKHP + JWMNP + MAR + ANC1P
+
 
 lmod5: Included ancestory - ANC1P - this further helps improve the model based on AIC
 ```{r}
 
-# creating first model with age, # of years of school
-lmod1 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin), data=acs.trainingdata)
-summary(lmod1)
-runDiagnostics(lmod1)
-
-# adding WKHP_bin - work hours per week to the model
-lmod2 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin + I(WKHP**2), data=acs.trainingdata)
-summary(lmod2)
-checkModelSig(lmod2)
-
-# comparing second model with model 1 - checking fit
-AIC(lmod1,lmod2)
-
-# adding JWMNP - travel time to work to the model
-lmod3 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin, data=acs.trainingdata)
-summary(lmod2)
-checkModelSig(lmod2)
-
-# comparing current and previous model - checking fit
-AIC(lmod2,lmod3)
-
-
-# adding MAR - marital status
-lmod4 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin + MAR_bin, data=acs.trainingdata)
-summary(lmod4)
-checkModelSig(lmod4)
-
-# comparing current and previous model - checking fit
-AIC(lmod3,lmod4)
-
-# adding JWMNP - travel time to work to the model
-lmod5 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin + MAR_bin + ANC1P + LANP_bin, data=acs.trainingdata)
+lmod5 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin + MAR_bin + ANC1P_bin + LANP_bin, data=acs.trainingdata)
 summary(lmod5)
-checkModelSig(lmod5)
-
-# comparing second model with model new model - checking fit
+mod5_robust <- coeftest(lmod5, vcov = vcovHC)
 AIC(lmod4,lmod5)
-# model 5 show a little improvement based on AIC
-
-################################################
-############ code for predictions ######## 
-################################################
-predictions = predict.lm(lmod5,acs.small.testdata,se.fit = FALSE, interval = "confidence" )
-
-acs.small.testdata$fit=as.vector(predictions[,1])
-acs.small.testdata$lwr=as.vector(predictions[,2])
-acs.small.testdata$upr=as.vector(predictions[,3])
-acs.small.testdata$lPINCP=log(acs.small.testdata$PINCP)
-
-#plotting results - actual vs fitted
-plot.data=(acs.small.testdata[c("lPINCP","fit","lwr","upr")])
-plot.data=plot.data[complete.cases(plot.data),]
-plot(plot.data$lPINCP, type = "l",col="red")
-lines(plot.data$fit,col="green")
-
-### view data side by side
-head(plot.data)
-
-
-####UPDATES-END
-##########################################
-##########################################
-##########################################
-##########################################
-
-#Utilize White Standard Error because of evidence of Heteroskedasticity
-mod0_robust <- coeftest(model0, vcov = vcovHC)
-mod1_robust <- coeftest(model1, vcov = vcovHC)
-mod2_robust <- coeftest(model2, vcov = vcovHC)
-
-stargazer(mod0_robust, mod1_robust, mod2_robust, type = "text")
-
-#Evaluate if there is any difference between the different models we generated
-waldtest(mod0, mod1)
-waldtest(mod1, mod2)
+waldtest(lmod4, lmod5)
+runDiagnostics(lmod5)
 
 #Pick best model and run majority of diagnostics on that model (which will be named mod0)
 
 ```
 
 ```{r}
+runCV(lmod5)
 
-runDiagnostics(mod0)
-
-# #Model Assumption Diagnostics Plots
-# plot(mod0)
-# residualPlots(mod0)
-# 
-# #Evaluate serial correlation of the residuals
-# plot(mod0$residuals, main="Autocorrelation Function of Model Residuals")
-# acf(0$residuals, main="Autocorrelation Function of Model Residuals")
-# 
-# #Correlation among variables - to identify relationships that warrant further investigation
-# library(corrplot)
-# M <- cor(acs)
-# corrplot(M, method="circle")
-# 
-# shapiro.test(mod0$residuals)
-# 
-# #Breusch-Pagan Test for Homoskedasticity
-# bptest(mod0)
-# 
-# par(mfrow=c(1,1))
-# hist(mod0$residuals)
-# qqnorm(mod0$residuals)
-# qqline(mod0$residuals)
-# scatterplot(mod0$fitted.values, mod0$residuals, smoother = loessLine, cex = 0.5, pch = 19,    smoother.args = list(lty = 1, lwd = 5))
-# 
-# #Exogeneity
-# exo_mod1 <- lm(mod0$residuals ~ acs$AGEP)
-# exo_mod2 <- lm(mod0$residuals ~ acs$VAR2)
-# exo_mod3 <- lm(mod0$residuals ~ acs$VAR3)
-# exo_mod4 <- lm(mod0$residuals ~ acs$VAR4)
-# exo_mod5 <- lm(mod0$residuals ~ acs$VAR5)
-# 
-# summary(exo_mod1)
-# summary(exo_mod2)
-# summary(exo_mod3)
-# summary(exo_mod4)
-# summary(exo_mod5)
 ```
 
+
+
+```{r}
+stargazer(mod0_robust, mod1_robust,mod2_robust,mod3_robust,mod4_robust,mod5_robust, type = "text")
+
+```
