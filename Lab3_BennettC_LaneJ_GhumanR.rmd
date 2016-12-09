@@ -665,145 +665,182 @@ After performing EDA on the raw dataset, we further narrowed down which variable
     * AGP (Age): Bucket by decade
     * SEX (Sex): No transformation needed 
     * MAR (Marital Status): Transform to factor/categorical
-* SCHL (School Completed): Bucket by (No schooling, Some Highschool, GED, Associates Degree, Bachelors Degree, Masters Degree or higher)
-* INDP (Employment Industry Code): Transform to factor/categorical
-* ANC1P (Ancestry): Transform to factor/categorical
-* LANP (Language Spoken at Home): Bucket by (English, Spanish, Other buckets)
-* FCITP (Citizenship): Transform to factor/categorical
-* JWMNP (Drive Time to Work): No transformation
-* WKHP (Work Hours per Week): Possible exponential transformation to accentuate the extreme values
+    * SCHL (School Completed): Bucket by (No schooling, Some Highschool, GED, Associates Degree, Bachelors Degree, Masters Degree or higher)
+    * INDP (Employment Industry Code): Transform to factor/categorical
+    * ANC1P (Ancestry): Transform to factor/categorical
+    * LANP (Language Spoken at Home): Bucket by (English, Spanish, Other buckets)
+    * FCITP (Citizenship): Transform to factor/categorical
+    * JWMNP (Drive Time to Work): No transformation
+    * WKHP (Work Hours per Week): Possible exponential transformation to accentuate the extreme values
 
 ###Overall Dataset Filters
 
 It was decided that the overall data set needed to be narrowed down to include only records that meet the following criteria:
 
-a.) Records that have an income that was not N/A and was greater than 0
-b.) Records where the survey respondants had an ave value greater than or equal to 15
+* Records that have an income that was not N/A and was greater than 0
+* Records where the survey respondants had an ave value greater than or equal to 15
+
+##Data Transformation and EDA of Transformed Variables
 
 ```{r}
+
+#########################################################################################################
+#                                                                                                       #
+# Data Transformation and EDA of Transformed Variables                                                  #
+#                                                                                                       #
+#########################################################################################################
+
+###########################################################
+# Filter Data Set Based on Age and Income                 #
+###########################################################
 
 #Filter the data setup to include only income > 0, income != N/A, and Age >= 15
 acs <- acs[acs$PINCP > 0,]
 acs <- acs[!is.na(acs$PINCP),]
 acs = acs[acs$AGEP>=15,]
 
-```
+###########################################################
+# Data Transformation for PINCP                           #
+###########################################################
 
-##Transformation rules and running EDA again after transformation
-```{r}
-
-########################################
-#Data Transformation for PINCP         #
-########################################
-#converting income to log
+# Create log transform of Person's Income - PINCP
 acs$PINCP_log <- log(acs$PINCP)
+
+# Evaluate transformed field
 runEDA("PINCP_log")
 makeFreqTable("PINCP_log")
 makeScatterPlot("PINCP_log")
 
-########################################
-#Data Transformation for AGEP          #
-########################################
-acs$AGEP_bin = acs$AGEP
+############################################################
+# Data Transformation for AGEP                             #
+############################################################
 
-# set starting age as 15 as records with age 14 or lower were filtered out
-# setting bin ranges based on intuition - groups of age of people working
+# Setting bin ranges based on intuition - groups of age of people working
+acs$AGEP_bin = acs$AGEP
 acs$AGEP_bin <- cut(acs$AGEP, c(15,18, 22, 30, 40, 50, 60, 70, 80, 90, 100))
 
+# Evaluate transformed field
 runEDA("AGEP_bin")
 makeFreqTable("AGEP_bin")
 makeScatterPlot("AGEP_bin")
 
-###MAR####
+###########################################################
+# Data Transformation for MAR                             #
+###########################################################
+
+# Create bins for Marital Status
 acs$MAR_bin = factor(acs$MAR)
 levels(acs$MAR_bin) = c("Married","Widowed","Divorced","Separated","Not Married")
 
+# Evaluate transformed field
 runEDA("MAR_bin")
 makeFreqTable("MAR_bin")
 makeScatterPlot("MAR_bin")
 
 ###########################################################
-#Data Transformation for SCHL (Years of School Completed) #
+# Data Transformation for SCHL                            #
 ###########################################################
 
+#Create bins for number of school years completed
 acs$SCHL_bin <- as.numeric(cut(acs$SCHL, c(-1, 12, 16, 18, 20, 22, 24))) 
+
+# Evaluate transformed field
 runEDA("SCHL_bin")
 makeFreqTable("SCHL_bin")
 makeScatterPlot("SCHL_bin")
 
-######################################################
-#Data Transformation for JWMNP (Travel Time to Work) #
-######################################################
+###########################################################
+# Data Transformation for JWMNP (Travel Time to Work)     #
+###########################################################
 
+#Set n/a values to zero
 acs$JWMNP_bin= acs$JWMNP
 acs$JWMNP_bin[is.na(acs$JWMNP)] = 0
+
+# Evaluate transformed field
 runEDA("JWMNP_bin")
 makeFreqTable("JWMNP_bin")
 makeScatterPlot("JWMNP_bin")
 
-######################################################
-#Data Transformation for WKHP (Hours Worked per Week) #
-######################################################
+###########################################################
+# Data Transformation for WKHP (Hours Worked per Week)    #
+###########################################################
+
+#Set n/a values to zero
 acs$WKHP_bin= acs$WKHP
 acs$WKHP_bin[is.na(acs$WKHP)] = 0
+
+# Evaluate transformed field
 runEDA("WKHP_bin")
 makeFreqTable("WKHP_bin")
 makeScatterPlot("WKHP_bin")
 
-######################################################
-#Data Transformation for INDP:  #
-######################################################
+###########################################################
+# Data Transformation for INDP:                           #
+###########################################################
+
+#Set as factor
 acs$INDP_bin = factor(acs$INDP)
 acs$INDP_bin=addNA(acs$INDP_bin) 
+
+# Evaluate transformed field
 runEDA("INDP_bin")
 makeFreqTable("INDP_bin")
 makeScatterPlot("INDP_bin")
 
+###########################################################
+# Data Transformation for LANP (Language Spoken)          #
+###########################################################
 
-######################################################
-#Data Transformation for LANP (Language Spoken)      #
-######################################################
+#Create 2 bins for Language
 acs$LANP_bin="Non-English, Non-Spanish" 
-
 acs$LANP_bin[is.na(acs$LANP)]<- "English" 
 acs$LANP_bin[acs$LANP == 625] <- "Spanish" 
 acs$LANP_bin = factor(acs$LANP_bin) 
+
+# Evaluate transformed field
 runEDA("LANP_bin")
 makeFreqTable("LANP_bin")
 makeScatterPlot("LANP_bin")
 
-######################################################
-#Data Transformation for ANC1P (Ancestry)            #
-######################################################
+##########################################################
+# Data Transformation for ANC1P (Ancestry)               #
+##########################################################
 
+#Set as factor
 acs$ANC1P_bin = factor(acs$ANC1P) 
 acs$ANC1P_bin = addNA(acs$ANC1P_bin)
+
+# Evaluate transformed field
 runEDA("ANC1P_bin")
 makeFreqTable("ANC1P_bin")
 makeScatterPlot("ANC1P_bin")
 
-######################################################
-#Data Transformation for POBP (Place of Birth)       #
-######################################################
+##########################################################
+# Data Transformation for POBP (Place of Birth)          #
+##########################################################
 
+#Filter out international Place of Birth's
 acs$POBP_US_bin = acs$POBP < 72 #changed from 73 to 72 
+
+# Evaluate transformed field
 runEDA("POBP_US_bin")
 makeFreqTable("POBP_US_bin")
 makeScatterPlot("POBP_US_bin")
 
-######################################################
-#Data Transformation for POWSP (Place of Work)       #
-######################################################
+##########################################################
+# Data Transformation for POWSP (Place of Work)          #
+##########################################################
 
+#Filter out internatinoal Place of Work
 acs$POWSP_US_bin = acs$POWSP < 72 #changed from 73 to 72 
-# filter so that place of work is in US 
-# (as there could be other confounding variables that affect international income)
+
+# Evaluate transformed field
 runEDA("POWSP_US_bin")
 makeFreqTable("POWSP_US_bin")
 makeScatterPlot("POWSP_US_bin")
 
 ```
-
 
 ##Model training
 This section helps split the dataset into training and test, so that back testing can be done on the  models for validation.
