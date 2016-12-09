@@ -911,13 +911,13 @@ And while many income values in survey data are categorical, the ACS treats this
 
 ###1.) Random Sampling
 
-From the Census Bureau literature: (https://www.census.gov/content/dam/Census/programs-surveys/acs/about/ACS_Information_Guide.pdf)
-
 The Census Bureau selects a random sample of addresses to be included in the ACS. Each address has about a 1-in-480 chance of being selected in a month, and no address should be selected more than once every 5 years. The Census Bureau mails questionnaires to approximately 295,000 addresses a month across the United States. This is a small number of households considering there are more than 180 million addresses in the United States and an address that receives ACS instructions will not likely fi nd a neighbor or friend who has also received them.
 
 Observations:
 
 The Census Bureau randomly selects its list of addresses from the US Postal Service, which is known for being quite complete and accurate. However, error and omissions do exists, specifically (but not limited to) new homes, seasonal dwellings, and for transient or homeless individuals.  But note that to address this last source of error, the Census Bureau does send surveys to group homes. Another source of error is that this data is obviously only available for compliant sample subjects who complete the information completely and accurately.  While this assumption is helped by the fact that this survey is mandated by law, it is possible that compliance rates may be lower for certain communities.
+
+From the Census Bureau literature: (https://www.census.gov/content/dam/Census/programs-surveys/acs/about/ACS_Information_Guide.pdf)
 
 ###Linearity in Parameters
 
