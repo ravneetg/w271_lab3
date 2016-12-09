@@ -1086,6 +1086,7 @@ AIC(lmod1,lmod1b)
 runDiagnostics(lmod1)
 
 runCV(lmod1)
+
 ```
 
 ### Attempt 2: PINCP ~ AGEP + SCHL + WKHP
@@ -1106,53 +1107,43 @@ mod2_robust
 AIC(lmod1,lmod2)
 waldtest(lmod1, lmod2)
 runDiagnostics(lmod2)
-
 runCV(lmod2)
 
 ```
 
 ### Attempt 3: PINCP ~ AGEP + SCHL + WKHP + JWMNP
 
-
-lmod3: Including JWMNP (travel time to work). The AIC value decreases further.
+Model 3(lmod3): In Model 3 we add in the Travel Time to Work (JWMNP) variable. The R-squared value increases slightly to 0.45, and the overall model remains highly significant. The AIC test indicates a lower Akaike score for model 3, so we decided to keep this variable in the model.
 
 ```{r}
 # adding JWMNP - travel time to work to the model
 lmod3 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP_bin**2) + JWMNP_bin, data=acs.trainingdata)
 summary(lmod3)
 mod3_robust <- coeftest(lmod3, vcov = vcovHC)
+mod3_robust
 AIC(lmod2,lmod3)
-waldtest(lmod2, lmod3)
+#waldtest(lmod2, lmod3)
 runDiagnostics(lmod3)
-
-```
-
-
-```{r}
 runCV(lmod3)
-```
 
+```
 
 ### Attempt 4: PINCP ~ AGEP + SCHL + WKHP + JWMNP + MAR
 
-
-lmod4: Included MAR - marital status, and it further helps bring down the AIC score.
+Model 4 (lmod4): At this point, we added the marital status variable to the model and evaluated the results. The R-squared increased ever so slightly, as did the AIC test. 
 
 ```{r}
 # adding MAR - marital status
 lmod4 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP_bin**2) + JWMNP_bin + MAR_bin, data=acs.trainingdata)
 summary(lmod4)
 mod4_robust <- coeftest(lmod4, vcov = vcovHC)
+mod4_robust
 AIC(lmod3,lmod4)
 waldtest(lmod3, lmod4)
 runDiagnostics(lmod4)
-```
-
-
-```{r}
 runCV(lmod4)
-```
 
+```
 
 ### Attempt 5: PINCP ~ AGEP + SCHL + WKHP + JWMNP + MAR + ANC1P
 
