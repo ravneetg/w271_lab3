@@ -976,7 +976,7 @@ lmod0 = lm(PINCP_log~1,data=acs.trainingdata)
 summary(lmod0)
 mod0_robust <- coeftest(lmod0, vcov = vcovHC)
 runDiagnostics(lmod0)
-runCV(lmod0)
+#runCV(lmod0)
 
 ```
 
@@ -1009,8 +1009,7 @@ mod1b_robust
 AIC(lmod1,lmod1b)
 #waldtest(lmod0, lmod1)
 runDiagnostics(lmod1)
-
-runCV(lmod1)
+#runCV(lmod1)
 
 ```
 
@@ -1032,7 +1031,7 @@ mod2_robust
 AIC(lmod1,lmod2)
 waldtest(lmod1, lmod2)
 runDiagnostics(lmod2)
-runCV(lmod2)
+#runCV(lmod2)
 
 ```
 
@@ -1051,7 +1050,7 @@ mod3_robust
 AIC(lmod2,lmod3)
 #waldtest(lmod2, lmod3)
 runDiagnostics(lmod3)
-runCV(lmod3)
+#runCV(lmod3)
 
 ```
 
@@ -1072,24 +1071,29 @@ mod4_robust
 AIC(lmod3,lmod4)
 waldtest(lmod3, lmod4)
 runDiagnostics(lmod4)
-runCV(lmod4)
+#runCV(lmod4)
 
 ```
 
-### Attempt 5: PINCP ~ AGEP + SCHL + WKHP + JWMNP + MAR + ANC1P
+### Attempt 5: PINCP ~ AGEP + SCHL + WKHP + JWMNP + MAR + ANC1P + LANP
 
+Model 5 (lmod5): At this point we added in both the ancestry and the language spoken at home variables. The model now looks like this:
 
-lmod5: Included ancestory - ANC1P - this further helps improve the model based on AIC
+PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin + MAR_bin + ANC1P_bin + LANP_bin
+
+Results: The addition of the Ancestry and the Language variables improved the R-squared to 0.545 and the AIC showed that Model 5 provided improvement over Model 4.  However, the Ancestry variable introduced quite a few coefficients that were not significant, so this model needs further refinement. Due to the large number of insignificant Ancestry coefficients, given more time, we would collapse many of the Ancestry categories into a smaller number of bins. The Wald Test also provides evidence that the models are not the same, and that the coefficients are different than zero.  The AIC indicates that Model 5 shows an improvement over Model 4.  Model 5 is our chosen OLS Regression Model and we therefore explore the assumptions and diagnostics further.
+
 ```{r}
 
-lmod5 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP**2) + JWMNP_bin + MAR_bin + ANC1P_bin + LANP_bin, data=acs.trainingdata)
+lmod5 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP +  I(WKHP**2) + JWMNP_bin + MAR_bin + ANC1P_bin + LANP_bin, data=acs.train2)
 summary(lmod5)
 mod5_robust <- coeftest(lmod5, vcov = vcovHC)
 AIC(lmod4,lmod5)
 waldtest(lmod4, lmod5)
+
 runDiagnostics(lmod5)
 
-#Pick best model and run majority of diagnostics on that model (which will be named mod0)
+plot(lmod5)
 
 ```
 
