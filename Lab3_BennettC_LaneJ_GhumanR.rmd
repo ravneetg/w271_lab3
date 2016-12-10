@@ -130,9 +130,7 @@ load("w271_lab3.Rproj.RData")
 ##################################################################################################################
 
 ```
-
-###Data features used for this study:
-ADJINC -- Adjustment factor for income and earnings dollar amounts. The value of ADJINC inflation-adjusts reported income to 2015 dollars and applies to FINCP and HINCP in the housing record.
+##Exploratory Data Analysis
 
 ```{r}
 
