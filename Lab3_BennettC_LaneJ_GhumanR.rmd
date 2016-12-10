@@ -861,6 +861,11 @@ acs.small.testdata=acs.testdata[sample(nrow(acs.testdata), 100,replace=FALSE), ]
 #create training dataset
 acs.trainingdata = anti_join(acs, acs.testdata, by =c("SERIALNO","SPORDER"))
 
+#a smaller training set
+acs.train2 <- acs.trainingdata[sample(nrow(acs.trainingdata), 100000, replace=FALSE), ]
+nrow(acs.train2)
+summary(acs.train2)
+
 #Verify quantity - ensure that test data + training data = full dataset
 nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 
@@ -882,18 +887,18 @@ nrow(acs.trainingdata)+nrow(acs.testdata)==nrow(acs)
 
 runCV =function(model){
   
-  predictions = predict.lm(model,acs.testdata, interval = "confidence" )
+  predictions = predict.lm(model,acs.small.testdata, interval = "confidence" )
   predictions = exp(as.vector(predictions[,1]))
 par(mfrow=c(2,1))
 
-    scatterplot(acs.testdata$PINCP,predictions, 
+    scatterplot(acs.small.testdata$PINCP,predictions, 
             smoother = loessLine, cex = 0.5, pch = 19, xlab = "Actual PINCP", ylab = "Predicted PINCP",smoother.args = list(lty = 1, lwd = 5),main = "Predicted Vs Actual PINCP: Test Data",boxplots="")
     
-    scatterplot( acs.testdata$PINCP,predictions,
+    scatterplot( acs.small.testdata$PINCP,predictions,
             smoother = loessLine, cex = 0.5, pch = 19, xlab = "Actual PINCP Log Scale", ylab = "Predicted PINCP Log Scale",smoother.args = list(lty = 1, lwd = 5),main = "Log Scale Predicted Vs Actual PINCP: Test Data",log="xy",boxplots="")
 
 
-MSE = mean((predictions - acs.testdata$PINCP)^2,na.rm = T)
+MSE = mean((predictions - acs.small.testdata$PINCP)^2,na.rm = T)
   
 return(paste("Mean Squared Error:",MSE))
 }
@@ -920,7 +925,7 @@ shapiroResult = "N/A"
 # Depending on the power of the computer, R may not able to plot models with too many training points.  
 # So only draw plots for models with less than 50000 data points (number choosen arbitrarily)
 # We can still test the OLS assumptions though with statistical tests 
-  if(nrow(model$model) < 50000)  {
+  if(nrow(model$model) < 200000)  {
 
 par(mfrow=c(1,2))
 hist(model$residuals, main="Histogram of Model Residuals")
@@ -931,10 +936,10 @@ scatterplot(exp(model$fitted.values),exp(model$residuals),
             smoother.args = list(lty = 1, lwd = 5),xlab="Fitted Values",ylab="Residauls",main = "Residuals Vs Fitted Values")
 residualPlots(model, main="Plots of Residuals vs Indepenent Variables")
 par(mfrow=c(2,1))
-scatterplot(exp(model$model[0,]),exp(model$fitted.values), 
+scatterplot(exp(model$model[,1]),exp(model$fitted.values), 
             smoother = loessLine, cex = 0.5, pch = 19,
             smoother.args = list(lty = 1, lwd = 5),xlab="Actual PINCP",ylab="Fitted PINCP",main = "Actual Vs Fitted Values",boxplots="")
-scatterplot( model$model[,0],model$fitted.values,
+scatterplot( model$model[,1],model$fitted.values,
             smoother = loessLine, cex = 0.5, pch = 19,
             smoother.args = list(lty = 1, lwd = 5),xlab="Actual PINCP Log Scale",ylab="Fitted PINCP Log Scale",main = "Actual Vs Fitted Values Log Scale",boxplots="")
 }
@@ -957,6 +962,7 @@ statTests
 }
 
 ```
+
 
 ##Modeling
 
