@@ -804,8 +804,9 @@ makeScatterPlot("LANP_bin")
 ##########################################################
 
 #Set as factor
+#acs$ANC1P_bin = addNA(acs$ANC1P_bin)
+acs$ANC1P_bin[is.na(acs$ANC1P)] = 0
 acs$ANC1P_bin = factor(acs$ANC1P) 
-acs$ANC1P_bin = addNA(acs$ANC1P_bin)
 
 # Evaluate transformed field
 runEDA("ANC1P_bin")
