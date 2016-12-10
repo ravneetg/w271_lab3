@@ -1188,3 +1188,10 @@ The predicted vs. actual scatterplot appears to be mostly linear.  There is a te
 runCV(lmod5)
 
 ```
+###Practical Significance:
+
+This model does not satisfy all of the CLM assumptions, however, with respect to answering the main question, we would not base predictions on chosen features alone.  There are other sources of income like inheritance, rental income etc that are not described by features like Work hours per week, Education etc alone. AGE has a high value of the coefficients followed by SCHL(years of school education) indicating higher income in the groups with more education and years of experience. Work hours per week has a very high value and is inline with the intuition that income has a direct dependency on number of hours worked per week. While the model does a good job at predicting income for the middle income group (20k-80k), the usage of model would define the practical significance of the model. For example, if the model were to be used to predict an income range for marketing, it could work well but for higher stakes decisions like approving line of credit, the risk associated with using this model goes up.
+
+##Conclusion:
+
+While our model is statistically significant and explains at least a lot of the variance, we found that overall a single linear regression is probably not the best fit for personal income.  We either will need more and different explanatory variables or we should employ mixture or other, possibly non-parametric, modeling techniques, such as k-nearest neighbors or neural networks.  
