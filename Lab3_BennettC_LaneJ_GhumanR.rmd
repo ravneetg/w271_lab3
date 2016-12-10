@@ -1031,14 +1031,14 @@ runDiagnostics(lmod1)
 
 Model 2 (lmod2): Model 2 is actually the result of quite a few iterations of models, each testing various transformations of the Work Hours Per Week variable. After quite a few tests, we identified the following transformations for the WKHP (work hours per week) variable as having the best fit to the training data:
 
-PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin + I(WKHP_bin**2)
+PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP + I(WKHP**2)
 
 Results: By adding the work hours per week variable, the R-squred jumped up from 0.27 to 0.44, and the overall model significance remained highly significant at 2.2e-16. The workhours $$WKHP_2$$ variable has a negative coefficient of -1.55e-04, with a robust standard error of 2.05e-06. The AIC run comparing model 1 to model 2 showed a significant drop in the Akaike value, indicating that Model 2 is an improvement over Model 1.
 
 ```{r}
 
 # adding WKHP_bin - work hours per week to the model
-lmod2 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin + I(WKHP_bin**2), data=acs.trainingdata)
+lmod2 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP + I(WKHP**2), data=acs.trainingdata)
 summary(lmod2)
 mod2_robust <- coeftest(lmod2, vcov = vcovHC)
 mod2_robust
@@ -1057,7 +1057,7 @@ Results: The R-squared value increases slightly to 0.45, and the overall model r
 
 ```{r}
 # adding JWMNP - travel time to work to the model
-lmod3 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP_bin**2) + JWMNP_bin, data=acs.trainingdata)
+lmod3 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP +  I(WKHP**2) + JWMNP_bin, data=acs.trainingdata)
 summary(lmod3)
 mod3_robust <- coeftest(lmod3, vcov = vcovHC)
 mod3_robust
@@ -1078,7 +1078,7 @@ Results: The Marital Status variable didn't have much influence on R-squared val
 
 ```{r}
 # adding MAR - marital status
-lmod4 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP_bin**2) + JWMNP_bin + MAR_bin, data=acs.trainingdata)
+lmod4 = lm(PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP +  I(WKHP**2) + JWMNP_bin + MAR_bin, data=acs.trainingdata)
 summary(lmod4)
 mod4_robust <- coeftest(lmod4, vcov = vcovHC)
 mod4_robust
