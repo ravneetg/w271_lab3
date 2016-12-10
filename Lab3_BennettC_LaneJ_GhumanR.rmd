@@ -1072,7 +1072,7 @@ runDiagnostics(lmod3)
 
 Model 4 (lmod4): At this point, we added the marital status variable to the model and evaluated the results. The R-squared increased ever so slightly, as did the AIC test. The model that is tested here is as follows:
 
-PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP_bin +  I(WKHP_bin**2) + JWMNP_bin + MAR_bin
+PINCP_log ~ AGEP_bin + factor(SCHL_bin) + WKHP +  I(WKHP**2) + JWMNP_bin + MAR_bin
 
 Results: The Marital Status variable didn't have much influence on R-squared value, but the AIC test indicated that the addition of Marital Status did improve the model over the previous model.
 
