@@ -693,9 +693,14 @@ It was decided that the overall data set needed to be narrowed down to include o
 ###########################################################
 
 #Filter the data setup to include only income > 0, income != N/A, and Age >= 15
+print("Original Record Count")
+nrow(acs)
 acs <- acs[acs$PINCP > 0,]
 acs <- acs[!is.na(acs$PINCP),]
-acs = acs[acs$AGEP>=15,]
+acs <- acs[acs$AGEP>=15,]
+acs <- acs[!is.na(acs$WKHP),]
+print("Records Remaining")
+nrow(acs)
 
 ###########################################################
 # Data Transformation for PINCP                           #
@@ -764,7 +769,9 @@ makeScatterPlot("JWMNP_bin")
 # Data Transformation for WKHP (Hours Worked per Week)    #
 ###########################################################
 
-# No Transformations needed
+#Set n/a values to zero
+acs$WKHP_bin= acs$WKHP
+acs$WKHP_bin[is.na(acs$WKHP)] = 0
 
 # Evaluate transformed field
 runEDA("WKHP_bin")
@@ -838,6 +845,7 @@ makeFreqTable("POWSP_US_bin")
 makeScatterPlot("POWSP_US_bin")
 
 ```
+
 ##Model Development
 
 The first step will be to randomly sample our data into two groups, a training data set and a test data set. This will allow us to accurately conduct back-testing with our models against the test set. The training data set will have approximately 2.2 million records, and the test data set will have approximately 28 thousand records. A smaller version of the test set, with approximately 60 records, will be used to plot comparison points and to generate visual referrences between the predicted and actual values.
