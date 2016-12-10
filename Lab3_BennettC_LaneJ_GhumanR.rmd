@@ -766,9 +766,7 @@ makeScatterPlot("JWMNP_bin")
 # Data Transformation for WKHP (Hours Worked per Week)    #
 ###########################################################
 
-#Set n/a values to zero
-acs$WKHP_bin= acs$WKHP
-acs$WKHP_bin[is.na(acs$WKHP)] = 0
+# No Transformations needed
 
 # Evaluate transformed field
 runEDA("WKHP_bin")
