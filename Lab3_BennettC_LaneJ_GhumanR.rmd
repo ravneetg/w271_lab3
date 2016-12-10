@@ -958,78 +958,6 @@ statTests
 
 ```
 
-##Model Assumptions and Diagnostics
-
-###Overall Observations on Statistical Validity of the Model
-
-The survey applies adjustments for several variables collected in the survey to weight the data in order to better resemble a nationally representative sample. This means that the ACS data is fundamentally biased, and may not be portrayed as fully accurate, exogenous tool. The weight values were present in the data set for some of the variables, but were not used for this analysis.
-
-While some variables were reported as being top or bottom-coded, our analysis showed that the number of impacted records was very small, and deemed to be not significantly impactful to the model results as their frequency was minimal.
-
-And while many income values in survey data are categorical, the ACS treats this variable as an ordinal feature, making it much more conduscive for OLS regression analysis.
-
-###1.) Random Sampling
-
-The Census Bureau selects a random sample of addresses to be included in the ACS. Each address has about a 1-in-480 chance of being selected in a month, and no address should be selected more than once every 5 years. The Census Bureau mails questionnaires to approximately 295,000 addresses a month across the United States. This is a small number of households considering there are more than 180 million addresses in the United States and an address that receives ACS instructions will not likely fi nd a neighbor or friend who has also received them.
-
-Observations:
-
-The Census Bureau randomly selects its list of addresses from the US Postal Service, which is known for being quite complete and accurate. However, error and omissions do exists, specifically (but not limited to) new homes, seasonal dwellings, and for transient or homeless individuals.  But note that to address this last source of error, the Census Bureau does send surveys to group homes. Another source of error is that this data is obviously only available for compliant sample subjects who complete the information completely and accurately.  While this assumption is helped by the fact that this survey is mandated by law, it is possible that compliance rates may be lower for certain communities.
-
-From the Census Bureau literature: (https://www.census.gov/content/dam/Census/programs-surveys/acs/about/ACS_Information_Guide.pdf)
-
-###Linearity in Parameters
-
-[The model violates the assumption of linearity in parameters as can be seen in the plot of the residuals against the fitted values. The remediate for this is to look at transformations for the contributing parameters (AGE) and to include additional interaction terms for ...]
-
-###No Perfect Collinearity
-
-Explained as, in the sample (and therefore in the population), the assumption is that none of the independent variables are constant and there are no exact relationships among the independent variables. While this assumption only rules out perfect collinearity/correlation between explanatory variables, imperfect correlation is allowed. In practice, high correlation can greatly increase errors.
-
-Observations:
-
-[The following explanatory variables appear to have high correlation... Constant variables are also ruled out, as they are collinear with the intercept term. To remediate this, the following variables  will be eliminated. ] 
-
-###Mean of error term is zero (zero conditional mean)
-
-Explained as, even if we look at a specific value of x, we still expect errors to average to zero. The explanatory variable must not contain information about the mean of ANY unobserved factors. This isn't a strong assumption, because we could always change $$ \beta_0  $$ to move our line up or down so that the mean error is zero. If the errors had a common nonzero mean, and you fitted a least square model, it would be absorbed by the constant, and the residuals would on average be zero. So you can't test whether the residuals have a common mean that's not zero. What you can check is whether the residuals (and by implication the errors that they estimate) have constant mean; on average they're still zero, but conditionally they may have means some distance from zero.
-
-Observations:
-
-The Residuals Vs. Fitted plot as a loess smooth superimposed, but without the curve you can still discern that ... [i.e. the points tend to sit above the zero line at each end and perhaps below it in the middle. You can immediately see that the linearity assumption is somewhat suspect, and that perhaps some curved relationship is present.]
-
-[By utilizing a log transformation of the dependent variable, PINP, we are able to show a more linear relationship betweent the predictors and the dependent variable.]
-
-[If we can't meet the Assumption of Zero Conditional Mean, we might be able to meet the weaker assumption of exogeneity.]
-
-###Omitted Variable Bias
-
-This model violoates the zero conditional mean assumption with respect to omitted variable bias because of the lack of several features that are likely represented in the error term, including: wealth and education of parents, what their lifestyle costs (thrifty?), or how they choose to live or spend their money, income in previous years (that may have provided adequate funds for subsequent years), and other living expenses...as well as many others. This indicates that the model's estimates could be biased due to omitting several potentially important variables.
-
-###Exogeneity
-
-Because of the large size of our dataset, exogeneity is a critical assumption. We tested that the explanatory variables are uncorrelated with the error term (called exogenity). If $$ \x_j $$ is exogenous, $$ Cov(\x_j,u)=0 $$
-
-###Homoskedasticity - Variance of error term is constant
-
-The error term can't vary more for some values of our predictor variables than others, otherwise stated as the values of the explanatory variables must contain no information about the variability of the error. This is a strong assumption.
-
-[The null hypothesis of homoskedasticity specified in the *Breusch-Pagan* test is rejected.]
-
-[The QQ plot shows some evidence of heteroskedasticity. The distribution of the residuals was nearly normal with some positive skew, further indicating possible heteroskedasticity. The residual vs. fitted plot confirms this by showing non-even distribution of variance.]
-
-[Remediation for Heteroskedasticity is to utilize heteroskedasticity-robust tools such as the White standard errors.]
-
-[The QQ plot shows some evidence of heteroskedasticity. The distribution of the residuals was nearly normal with some positive skew, further indicating possible heteroskedasticity.]
-
-###Normality of error term:
-
-[Due to the (very) large sample size, small deviations from the assumption of a normal distribution of error terms do not necessarily negate the statistical significance of tests that require this assumption. Our model does show significant deviations in the normality of the error term, which we attempted to reduce the effects by using robust tools (i.e F-test), as well as by transforming the [XXX] variables.]
-
-###Other sources of bias or error:
-
-The data is also collected at a person and household level. When a survey reaches a household, each person living in the household is asked to complete the form. It is likely that there may be more similarities than differences among individuals living together. Also, we chose the income person's income as the dependent variable because household income was not readily available for analysis.  This could introduce some bias in that certain people are likely benefiting from their partner's income, therefore their lifestyle-related survey responses may not be reflective of their personal income.
-
 ##Modeling
 
 The strategy we used in developing the best possible regression model was to first, establish a baseline of a simple mean using the log of Income as the dependent variable.  Then we began adding predictor variables one-by-one and evaluated the R-squared and the AIC to determine which additions (or transformation) increased fit, while reducing the models ability to be parsimonious. We also evaluated whether performing a log transformation on the Income variable helped with the improving the model's predictive abilities.
@@ -1166,13 +1094,79 @@ runDiagnostics(lmod5)
 ```
 
 ```{r}
-runCV(lmod5)
+stargazer(mod0_robust, mod1_robust,mod2_robust,mod3_robust,mod4_robust,mod5_robust, type = "text")
 
 ```
 
+##Model Assumptions and Diagnostics
 
+###Overall Observations on Statistical Validity of the Model
+
+The survey applies adjustments for several variables collected in the survey to weight the data in order to better resemble a nationally representative sample. This means that the ACS data is fundamentally biased, and may not be portrayed as fully accurate, exogenous tool. The weight values were present in the data set for some of the variables, but were not used for this analysis.
+
+While some variables were reported as being top or bottom-coded, our analysis showed that the number of impacted records was very small, and deemed to be not significantly impactful to the model results as their frequency was minimal.
+
+And while many income values in survey data are categorical, the ACS treats this variable as an ordinal feature, making it much more conduscive for OLS regression analysis.
+
+###1.) Random Sampling
+
+The Census Bureau selects a random sample of addresses to be included in the ACS. Each address has about a 1-in-480 chance of being selected in a month, and no address should be selected more than once every 5 years. The Census Bureau mails questionnaires to approximately 295,000 addresses a month across the United States. This is a small number of households considering there are more than 180 million addresses in the United States and an address that receives ACS instructions will not likely fi nd a neighbor or friend who has also received them.
+
+Observations:
+
+The Census Bureau randomly selects its list of addresses from the US Postal Service, which is known for being quite complete and accurate. However, error and omissions do exists, specifically (but not limited to) new homes, seasonal dwellings, and for transient or homeless individuals.  But note that to address this last source of error, the Census Bureau does send surveys to group homes. Another source of error is that this data is obviously only available for compliant sample subjects who complete the information completely and accurately.  While this assumption is helped by the fact that this survey is mandated by law, it is possible that compliance rates may be lower for certain communities.
+
+From the Census Bureau literature: (https://www.census.gov/content/dam/Census/programs-surveys/acs/about/ACS_Information_Guide.pdf)
+
+###Linearity in Parameters
+
+[The model violates the assumption of linearity in parameters as can be seen in the plot of the residuals against the fitted values. The remediation for this is to look for further transformations, but we feel we may have exhausted this as an option.
+
+###No Perfect Collinearity
+
+Explained as, in the sample (and therefore in the population), the assumption is that none of the independent variables are constant and there are no exact relationships among the independent variables. While this assumption only rules out perfect collinearity/correlation between explanatory variables, imperfect correlation is allowed. In practice, high correlation can greatly increase errors.
+
+Observations:
+
+The following explanatory variables appear to have high correlation: Age and Marital Status, and Ancestry and Language Spoken at Home.  Constant variables were ruled out, as they are collinear with the intercept term. To remediate this, the following variables  will be eliminated: ADJINC. 
+
+###Mean of error term is zero (zero conditional mean)
+
+Explained as, even if we look at a specific value of x, we still expect errors to average to zero. The explanatory variable must not contain information about the mean of ANY unobserved factors. This isn't a strong assumption, because we could always change $$ \beta_0  $$ to move our line up or down so that the mean error is zero. If the errors had a common nonzero mean, and you fitted a least square model, it would be absorbed by the constant, and the residuals would on average be zero. So you can't test whether the residuals have a common mean that's not zero. What you can check is whether the residuals (and by implication the errors that they estimate) have constant mean; on average they're still zero, but conditionally they may have means some distance from zero.
+
+Observations:
+
+The Residuals Vs. Fitted plot as a loess smooth superimposed, is difficult to discern whether the mean is zero, even with a randomly selected training set of 100,000. The plot shows a slight curve, and it appears there might be more residual data points below the mean line of zero.  Ther eis an unusual cluster below the around -10 on the residuals line. However, if we can't meet the Assumption of Zero Conditional Mean, we might be able to meet the weaker assumption of exogeneity.
+
+###Omitted Variable Bias
+
+This model violoates the zero conditional mean assumption with respect to omitted variable bias because of the lack of several features that are likely represented in the error term, including: wealth and education of parents, what their lifestyle costs (thrifty?), or how they choose to live or spend their money, income in previous years (that may have provided adequate funds for subsequent years), and other living expenses...as well as many others. This indicates that the model's estimates could be biased due to omitting several potentially important variables.
+
+###Exogeneity
+
+Because of the large size of our dataset, exogeneity is a critical assumption. We tested that the explanatory variables are uncorrelated with the error term (called exogenity). The plots of residuals vs. independent variables all appear to indicate a mean of zero, which supports the assumption of exogeneity.
+
+###Homoskedasticity - Variance of error term is constant
+
+The error term can't vary more for some values of our predictor variables than others, otherwise stated as the values of the explanatory variables must contain no information about the variability of the error. This is a strong assumption.
+
+The null hypothesis of homoskedasticity specified in the *Breusch-Pagan* test is rejected. Remediation for Heteroskedasticity is to utilize heteroskedasticity-robust tools such as the White standard errors.
+
+###Normality of error term:
+
+Due to the large sample size, small deviations from the assumption of a normal distribution of error terms do not necessarily negate the statistical significance of tests that require this assumption. Our model does show significant deviations in the normality of the error term, which we attempted to reduce the effects by using robust tools (i.e F-test), as well as by transforming the PINCP variable.
+
+###Other sources of bias or error:
+
+The data is also collected at a person and household level. When a survey reaches a household, each person living in the household is asked to complete the form. It is likely that there may be more similarities than differences among individuals living together. Also, we chose the income person's income as the dependent variable because household income was not readily available for analysis.  This could introduce some bias in that certain people are likely benefiting from their partner's income, therefore their lifestyle-related survey responses may not be reflective of their personal income.
+
+##Test Model's Accuracy
+
+The predicted vs. actual scatterplot appears to be mostly linear.  There is a tendency for the model to underestimate the predicted variable (log of income). There are quite a few observations outside of the 95% confidence interval, which calls into question the overall efficacy of the model. Based on the predicted vs. actual plot, it appears that we might need different models for different income levels.
 
 ```{r}
-stargazer(mod0_robust, mod1_robust,mod2_robust,mod3_robust,mod4_robust,mod5_robust, type = "text")
+
+#Test Model's accuracy
+runCV(lmod5)
 
 ```
