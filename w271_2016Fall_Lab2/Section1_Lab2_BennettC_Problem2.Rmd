@@ -1,0 +1,264 @@
+---
+title: "Applied Regression and Time Series Analysis: Lab 2"
+author: "Chris Bennett"
+date: "November 30, 2016"
+output: pdf_document
+---
+
+###Instructions:
+
+#### Forecast Inflation-Adjusted Gas Price
+During 2013 amid high gas prices, the Associated Press (AP) published an article about the U.S. inflation-adjusted price of gasoline and U.S. oil production. The article claims that there is "*evidence of no statistical correlation*" between oil production and gas prices. The data was not made publicly available, but comparable data was created using data from the Energy Information Administration. The workspace and data frame *gasOil.Rdata* contains the U.S. oil production (in millions of barrels of oil) and the inflation-adjusted average gas prices (in dollars) over the date range the article indicates.
+
+You have three tasks for this exericse, and both tasks need the use of the data set *gasOil.Rdata*.
+
+##Task 1: Create a **SARIMA-type** model to forecast the inflation-adjusted gas prices, and use this model to forecast the inflation-adjusted gas price for the next two years.
+
+```{r}
+######################################################################
+# Directory         : 
+# Program Name      : Section1_Lab2_BennettC.Rmd
+# Original Developer: Chris Bennett
+# Last Updated by   : Chris Bennett
+# Last Updated      : 11/30/2016
+#####################################################################
+
+#####################################################################
+# Setup
+
+# Set working directory
+setwd("C:/data")
+getwd()
+
+# Set Numeric Value Display
+# See reference from https://stat.ethz.ch/R-manual/R-devel/library/base/html/options.html
+options(digits=7) # Set the printed number of digits to 7. Default is 7. 
+#options("scipen" = 10)
+
+# Set memory limit
+memory.limit(50000000)
+
+################################################################
+# Load Libraries
+
+library(astsa)    # Time series package by Shummway and Stoffer
+library(zoo)      # time series package
+library(forecast)
+library(psych)
+library(car)
+library(lmtest)
+library(sandwich)
+library(ggplot2)
+require(scales)
+require(GGally)
+require(tseries)
+require(fGarch)   # Garch package
+require(quantmod) # Financial time series package
+#require(tseries)
+#require(MASS)
+#require(graphics)
+#require(corrgram)
+
+################################################################
+
+#General Exploratory Data Analysis
+
+#clear out any loaded objects
+rm(list=ls())
+ls()
+
+#load data set
+load("gasOil.Rdata")
+
+#begin EDA
+ls(gasOil)
+str(gasOil)
+
+#number of columns and rows
+nrow(gasOil)
+ncol(gasOil)
+
+describe(gasOil)
+summary(gasOil)
+head(gasOil)
+tail(gasOil)
+
+#look for missing values in each column
+sapply(gasOil, function(x) sum(is.na(x)))
+
+price.ts = ts(gasOil[,3], start=c(1978,1,1), end=c(2012,2,1), freq=12)
+production.ts = ts(gasOil[,2], start=c(1978,1,1), end=c(2012,2,1), freq=12)
+
+#price.z = zoo(x=as.numeric(gasOil[,3]), order.by=as.Date(gasOil[,1]))
+
+#evaluate the zoo data object
+class(price.ts)
+str(price.ts)
+head(price.ts,10)
+
+index(price.ts)
+coredata(price.ts)
+start(price.ts)
+end(price.ts)
+
+par(mfrow=c(2,2))
+plot(price.ts, col="blue", main="Fig 1: Inflation-Adjusted Gas Prices Series Plot")
+hist(price.ts, col="gray", main="Fig 2: Inflation-Adjusted Gas Prices Histogram")
+acf(price.ts, main="Fig 3: ACF: Inflation-Adjusted Gas Prices")
+pacf(price.ts, main="Fig 4: PACF: Inflation-Adjusted Gas Prices")
+
+price.diff <- diff(price.ts, lag=12)
+
+par(mfrow=c(2,2))
+plot(price.ts, col="blue", main="Fig 1: Inflation-Adjusted Gas Prices Series Plot")
+plot.ts(price.diff); title("Fig 2: First Difference of the Gas Prices Series")
+acf(price.diff, main="Fig 3: ACF: First Difference of the Gas Prices Series")
+pacf(price.diff, main="Fig 4: PACF: First Difference of the Gas Prices Series")
+
+fit1 <- arima(price.ts, order=c(2,1,2)) 
+fit1
+
+pvar<-1:3
+dvar<-1:2
+qvar<-1:2
+
+OrderGrid<-expand.grid(pvar,dvar,qvar)
+
+ModFit <- function(x, dat){
+          m=Arima(dat, order=c(x[[1]], x[[2]], x[[3]]))
+          return(m)
+} 
+
+Fits <- plyr::alply(OrderGrid, 1, ModFit, dat = price.ts)
+
+Fits
+
+```
+
+##Overall Observations
+
+* There are 410 rows of data, and 3 columns
+* The 3 columns are Date, Production, and Price
+* There appear to be no missing values from the data frame
+
+##Variables
+
+* Dates: 
+    * Appear to be monthly, specifically the first day of each month
+    * First Date: January 1, 1978
+    * Last Date: February 1, 2012
+* Production:
+    * Mean: 210.01 (standard deviation of 41.88)
+    * Min: 119.41
+    * Max: 283.25
+* Price:
+    * Mean: 2.39 (stdev of 0.7)
+    * Min: 1.33
+    * Max: 4.43
+
+####Stationarity
+
+* The series does not appear to be stationary in mean or variance.
+* The histogram of values shows a non-normal distribution with the largest number of the values between 1.5 and 2 with a significant positivie skew.
+* The plot of the series shows a large continuous negative shock between 1980 and 1987, a fairly consistent sequence between 1987 and 2005, then a large positive shock after 2005.  
+* The fact that this series is not stationary is further supported by the Autocorrelation Function showing significant (albeit decreasing) correlation for all lags displayed.
+
+####Seasonality
+
+* There appears to be some seasonal variation in the general plot that we will explore further.
+* The ACS does show some slight "waves" in the correlations between lags, suggesting possible seasonality.
+
+##Task 2: Create a *multivariate* time series model that can be used to predict/forecast inflation-adjusted gas prices, and use this model to forecast the inflation-adjusted gas price for the next two years
+
+```{r}
+
+summary(price.fit_lm <- lm(price.ts ~ time(price.ts)))
+  price.fit_lm$coeff
+  price.fit_lm$qr
+  price.fit_lm$fitted.values
+
+summary(production.fit_lm <- lm(production.ts ~ time(production.ts)))
+  production.fit_lm$coeff
+  production.fit_lm$qr
+  production.fit_lm$fitted.values
+
+par(mfrow=c(2,1))
+plot(price.ts, col="blue", main="", xlab="Year", ylab="Gas Price")
+title("Inflation-Adjusted Gas Prices")
+abline(price.fit_lm) # add the fitted regression line to the plot
+
+plot(production.ts, col="blue", main="", xlab="Year", ylab="Gas Production")
+title("Inflation-Adjusted Gas Production")
+abline(production.fit_lm) # add the fitted regression line to the plot
+
+head(cbind(price.ts, production.ts))
+
+# Show summary statistics, even though they might not be useful for a timeseries
+summary(cbind(price.ts, production.ts))
+
+# This shows that histogram and correlation may not be effective tools for time series data
+pm = ggpairs(cbind(price.ts, production.ts))
+print(pm)
+
+par(mfrow=c(2,2))
+  ts.plot(price.ts, col="blue", las=1)
+  title("Price")
+  ts.plot(production.ts, col="navy", las=1)
+  title("Production")
+
+par(mfrow=c(2,2))
+acf(price.ts); acf(production.ts)
+pacf(price.ts); pacf(production.ts)
+
+par(mfrow=c(1,1))
+ccf(price.ts, production.ts, main="Cross-correlation between Price and Production")
+
+GAS.ar <- ar(cbind(price.ts, production.ts), method="ols", dmean=T, intercept=F)
+summary(GAS.ar) # Objects of the estimation results
+GAS.ar$ar
+#==> it suggests that the best fitting VAR model is of order 26
+
+# Diagnosis using the estimated residuals
+dim(GAS.ar$res)
+summary(GAS.ar$res)
+GAS.ar$res #list the residual
+
+ggpairs(GAS.ar$res) # the residuals do look "fairly" normal and
+                   # not correlated with each other
+
+ts.plot(GAS.ar$res[,1], GAS.ar$res[,2], gpars=list(xlab="Simulated Time Period", ylab="Series Values",      lty=c(1:2), pch=c(1,4), col=c("blue","black")))
+title("Estimated Resduals from the VAR(26) Model")
+leg.txt <- c('Price', 'Production')
+legend('topleft', leg.txt, lty=1, col=c('blue', 'black'), bty='n', cex=.75)
+
+#par(mfrow=c(2,2))
+#  ts.plot(GAS.ar$res[-c(1:3),1], col="blue", main="Price Residuals from a VAR(26) Model")
+#  ts.plot(GAS.ar$res[-c(1:3),2], col="black", main="Production Residuals from a VAR(26) Model")
+#  acf(GAS.ar$res[-c(1:3),1], col="blue", main="ACF of Price Residuals")
+#  acf(GAS.ar$res[-c(1:3),2], main="ACF of Production Residuals")
+
+library(vars)
+GAS.var <- VAR(cbind(price.ts,production.ts), p=3, type="trend")
+summary(GAS.var)
+coef(GAS.var)
+???
+# 24-Step ahead forecast or 1-year forecast
+GAS.pred <- predict(GAS.var, n.ahead=24)
+GAS.pred
+
+price.pred <- ts(GAS.pred$fcst$price.ts[,1], st=2012, fr=12)
+production.pred  <- ts(GAS.pred$fcst$production.ts[,1], st=2012, fr=12)
+
+ts.plot(cbind(window(price.ts, start=2012), price.pred), lty=1:2)
+ts.plot(cbind(window(production.ts, start=2012), production.pred), lty=1:2)
+
+```
+
+Task 3: Compare the accuracy of the two models' forecasting results. Also, compare and contrast the results of these two models. Is one model better than the other? What metric(s) do you use to measure whether one model is "better" than the other? Why or why not? Explain the pros and cons of each of the models in this specific context.
+
+```{r}
+
+
+
+```
+
