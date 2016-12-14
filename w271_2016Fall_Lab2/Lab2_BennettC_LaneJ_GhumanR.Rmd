@@ -80,7 +80,7 @@ runEDA(diffPrice, "Change in Price")
 
 #Model Training 
 
-So the general ballpark is SARIMA model with order (2,1,1) and seasonal order (1,1,1~2) and period 5~6.  To nail down the exact parameters, we will need to use the AIC:
+So the general ballpark is SARIMA with order (2,1,1) and seasonal order (1,1,1~2) and period 5~6.  To nail down the exact parameters, we will need to use the AIC:
 
 ```{r}
 runFitDiagnoseModel = function(x1,o,s,holdout=0){
@@ -92,8 +92,7 @@ runFitDiagnoseModel = function(x1,o,s,holdout=0){
 
 
 # Model Diagnostics: Residuals
-  print(Box.test(fit$resid, type="Ljung-Box"))
-
+  print(paste("Residual Serial Independence:",Box.test(fit$resid, type="Ljung-Box")$p.value > .05))
   par(mfrow=c(2,2))
   plot(fit$resid, col="blue", main="Residual Series")
   hist(fit$resid, col="gray", main="Residuals")
@@ -144,7 +143,7 @@ return(fit)
 ```
 
 
-Out of the four possible models, model2 [ARIMA (2,1,1),(1,1,1) period 6] has the lowest mean squared error using a holdout of 24.  Also, model1 [ARIMA (2,1,1),(1,1,1) period 5] has a lower AIC than model3 [ARIMA (2,1,1),(1,1,2) period 5].  Model4 [ARIMA (2,1,1),(1,1,2) period 6] returned an error and would not compile.
+Out of the four possible models, model2 [SARIMA (2,1,1),(1,1,1) period 6] has the lowest mean squared error using a holdout of 24.  Also, model1 [SARIMA (2,1,1),(1,1,1) period 5] has a lower AIC than model3 [SARIMA (2,1,1),(1,1,2) period 5].  Model4 [SARIMA (2,1,1),(1,1,2) period 6] returned an error and would not compile.
 
 ```{r}
 model1=runFitDiagnoseModel(gasOil$Price,c(2,1,1),list(order = c(1,1,1), period=5),24)
@@ -167,17 +166,24 @@ model4=runFitDiagnoseModel(gasOil$Price,c(2,1,1),list(order = c(1,1,2), period=6
 ))
 ```
 
-Further diagnostics show that the 2nd AR and first MA coefficients in non-seasonal component of model2 are not siginificantly different from 0.  This suggests trying to fit an ARIMA (1,1,0), (1,1,1) period 6 model.
+Further diagnostics show that the 2nd AR and first MA coefficients in non-seasonal component of model2 are not siginificantly different from 0.  This suggests trying to fit a SARIMA (1,1,0), (1,1,1) period 6 model.
 
 ```{r}
 t( confint(model2) )
 
 ```
-While the new model5 [ARIMA (1,1,0),(1,1,1)] has some improvment in the MSE, its AIC is higher than model2.  So we're going to stick with model2 for now.
+While the new model5 [SARIMA (1,1,0),(1,1,1)] has some improvment in the MSE, its AIC is higher than model2.  So we're going to stick with model2 for now.
 
 ```{r}
 model5=runFitDiagnoseModel(gasOil$Price,c(1,1,0),list(order = c(1,1,1), period=6),24)
 AIC(model2,model5)
+```
+
+Interestingly, an SARIMA (1,1,1),(1,1,3) period 6 is a better fit in terms of both AIC and MSE.  However, the AR signature discovered during EDA suggests an AR(2) series, since the PACF on the differenced series clearly shows correlation in lag 2.  So I'm still going to stick with model2
+
+```{r}
+model6=runFitDiagnoseModel(gasOil$Price,c(1,1,1),list(order = c(1,1,3), period=6),24)
+AIC(model2,model6)
 ```
 
 The last step is to retrain the model on the entire data set and then forecast 2 years out.  
