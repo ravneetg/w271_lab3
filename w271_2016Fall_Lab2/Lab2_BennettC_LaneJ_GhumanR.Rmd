@@ -1,10 +1,9 @@
 ---
 title: "Applied Regression and Time Series Analysis: Lab 2"
-author: "Jeffrey Yau and Devesh Tiwari"
-date: "October 25, 2016"
+author: "Chris Bennett, Jackson Lane, Ravneet Ghuman"
+date: "Dec 14, 2016"
 output: pdf_document
 ---
-
 ##Instructions:
 
 *  **Due Date: 12/16/2016 (Friday)**
