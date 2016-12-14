@@ -1,9 +1,10 @@
 ---
 title: "Applied Regression and Time Series Analysis: Lab 2"
-author: "Chris Bennett, Jackson Lane, Ravneet Ghuman"
-date: "Dec 14, 2016"
+author: "Jeffrey Yau and Devesh Tiwari"
+date: "October 25, 2016"
 output: pdf_document
 ---
+
 ##Instructions:
 
 *  **Due Date: 12/16/2016 (Friday)**
@@ -40,6 +41,7 @@ library(reshape2)
 library(car)
 library(vars)
 library(tseries)
+#setwd("/Users/rghuman/Documents/DS/w271/assignments/w271_2016Fall_lab2")
 load("gasOil.Rdata")
 ```
 
@@ -57,14 +59,24 @@ describe(gasOil)
    par(mfrow=c(3,1))
    print(paste("Dickey Fuller Test:",adf.test(x)$p.value)
          )
+   # plot time series
    plot.ts(x, main = paste("Time Series Plot of",label),ylab= label)
+   
+   #plot acf and pacf
    acf(x,main = paste("ACFPlot of",label),ylab = label,lag.max = l)
    pacf(x, main = paste("PACF Plot of",label),ylab = label,lag.max=l)
 
+   #scatter plot matrix
+   lag.plot(x, lags=9, layout=c(3,3), 
+         diag=TRUE, disg.col="red",
+         main=paste("Autocorrelation between ",label," and its Own Lags"))
  }
+
+# run EDA on price
  runEDA(gasOil$Price,"Price")
 
-
+ # run EDA on production
+ runEDA(gasOil$Production,"Production")
 ```
 
 
@@ -199,6 +211,10 @@ Task 2: Create a *multivariate* time series model that can be used to predict/fo
 
 ```{r}
 # Fitting a linear trend to the Gas Price Data
+# Scatterplot Matrix
+splom(cbind(gasOil$Price,gasOil$Production), 
+      main = "Pairwise Scatterplot of Price and Production")
+
 # Regress Price on time
 summary(price.fit_lm <- lm(price.ts ~ time(price.ts)))
 price.fit_lm$coeff
