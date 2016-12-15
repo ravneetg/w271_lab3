@@ -448,9 +448,47 @@ fanchart(fit.pr)  # plot prediction + error
 
 Task 3: Compare the accuracy of the two models' forecasting results. Also, compare and contrast the results of these two models. Is one model better than the other? What metric(s) do you use to measure whether one model is "better" than the other? Why or why not? Explain the pros and cons of each of the models in this specific context.
 
+
 ```{r}
 
+pred.price=cbind(GAS.pred$fcst$price.ts.training,price.ts.test)
+pred.production=cbind(GAS.pred$fcst$production.ts.training,production.ts.test)
 
+GAS.price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=2011, fr=12)
+GAS.prod.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=2011, fr=12)
+
+### predicting SARIMA using the final model for 14 steps ahead
+modelSarima=runFitDiagnoseModel(price.ts.training,c(2,1,1),list(order = c(1,1,1), period=6))
+forecastSarima = forecast.Arima(modelSarima, h=14)
+
+# Price - Comparison of actual vs predicted values (VAR) VS predicted SARIMA
+cbind(pred.price[,1],pred.price[,5],forecastSarima$mean[1:14])
+
+#Comparison of actual vs predicted values (Production)
+cbind(pred.production[,1],pred.production[,5])
+
+# actual vs fitted (Production)
+plot.ts(pred.production[,5],type="l",col="red")
+lines(pred.production[,1],col="green")
+legend('topleft', leg.txt, lty=1, col=c('red', 'green'), bty='n', cex=.75)
+
+
+##########################################
+##### Need to work on below
+##########################################
+# Examine the residuals:
+head(x.ar$resid)
+par(mfrow=c(2,2))
+plot(x, main="Simulated AR1 Model t-plot")
+plot(x.ar$resid[-1], type="l", main="Residuals t-plot")
+acf(x.ar$resid[-1], main="ACF of the Residual Series")
+pacf(x.ar$resid[-1], main="ACF of the Residual Series")
+
+par(mfrow=c(1,1))
+hist(x.ar$resid[-1], breaks="FD", col="blue",
+     main="Residual Series", ylim=c(0,100))
+qqnorm(x.ar$resid[-1], main="Normal Q-Q Plot of the Residuals",
+       type="p");
+qqline(x.ar$resid[-1], col="blue")
 
 ```
-
