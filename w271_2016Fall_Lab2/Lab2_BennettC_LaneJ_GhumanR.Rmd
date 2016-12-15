@@ -41,7 +41,8 @@ library(reshape2)
 library(car)
 library(vars)
 library(tseries)
-#setwd("/Users/rghuman/Documents/DS/w271/assignments/w271_2016Fall_lab2")
+library("GGally")
+
 load("gasOil.Rdata")
 ```
 
@@ -211,84 +212,103 @@ Task 2: Create a *multivariate* time series model that can be used to predict/fo
 
 ```{r}
 # Fitting a linear trend to the Gas Price Data
+summary(gasOil)
+gasOil$Date = as.Date(gasOil$Date)
+
+price.ts <- ts(gasOil$Price, start=1978, freq=12) 
+production.ts <- ts(gasOil$Production, start=1978, freq=12) 
+length((price.ts))
+length((production.ts))
+
+price.ts.training=ts(price.ts[1:396], start=1978, freq=12) 
+price.ts.test=ts(price.ts[397:410], start=2011, freq=12) 
+str(price.ts.training)
+str(price.ts.test)
+
+production.ts.training=ts(production.ts[1:396], start=1978, freq=12) 
+production.ts.test=ts(production.ts[397:410], start=2011, freq=12) 
+str(production.ts.training)
+str(production.ts.test)
+
 # Scatterplot Matrix
 splom(cbind(gasOil$Price,gasOil$Production), 
       main = "Pairwise Scatterplot of Price and Production")
 
 # Regress Price on time
-summary(price.fit_lm <- lm(price.ts ~ time(price.ts)))
+summary(price.fit_lm <- lm(price.ts.training ~ time(price.ts.training)))
 price.fit_lm$coeff
 price.fit_lm$qr
-price.fit_lm$fitted.values
+head(price.fit_lm$fitted.values)
 
 # Fitting a linear trend to the Gas Production Data
 # Regress Production on time
-summary(production.fit_lm <- lm(production.ts ~ time(production.ts)))
+summary(production.fit_lm <- lm(production.ts.training ~ time(production.ts.training)))
 production.fit_lm$coeff
 production.fit_lm$qr
-production.fit_lm$fitted.values
+head(production.fit_lm$fitted.values)
 
 #Plot the regression lines for both Price and Production
 par(mfrow=c(2,1))
-plot(price.ts, col="blue", main="", xlab="Year", ylab="Gas Price")
+plot(price.ts.training, col="blue", main="", xlab="Year", ylab="Gas Price")
 title("Inflation-Adjusted Gas Prices")
 abline(price.fit_lm) # add the fitted regression line to the plot
 
-plot(production.ts, col="blue", main="", xlab="Year", ylab="Gas Production")
+plot(production.ts.training, col="blue", main="", xlab="Year", ylab="Gas Production")
 title("Inflation-Adjusted Gas Production")
 abline(production.fit_lm) # add the fitted regression line to the plot
 
 #Look at the first few records for both price and production
-head(cbind(price.ts, production.ts))
+head(cbind(price.ts.training, production.ts.training))
 
 #Evaluate Correlation between price and correlation
-cor(price.ts, production.ts)
+cor(price.ts.training, production.ts.training)
 
 #Plot the price and production time series
 par(mfrow=c(2,2))
-plot.ts(price.ts); title("Time-Series Plot of Price")
-plot.ts(production.ts); title("Time-Series Plot of Production")
-ts.plot(ts(price.ts),ts(production.ts)); title("Time-Series Plot of Price and Production")
-plot(price.ts,production.ts); title("Price vs Production")
+plot.ts(price.ts.training); title("Time-Series Plot of Price")
+plot.ts(production.ts.training); title("Time-Series Plot of Production")
+ts.plot(ts(price.ts.training),ts(production.ts.training)); title("Time-Series Plot of Price and Production")
+plot(price.ts.training,production.ts.training); title("Price vs Production")
 
 # Show summary statistics, even though they might not be useful for a timeseries
-summary(cbind(price.ts, production.ts))
+summary(cbind(price.ts.training, production.ts.training))
 
 #Plot the autocorrelation fuction and partial autocorrelation function for both price and production for 36 lags
 par(mfrow=c(2,2))
-acf(price.ts, main="", 36); title("ACF of Price")  
-acf(production.ts, main="", 36); title("ACF of Production")
-pacf(price.ts, main="", 36); title("PACF of Price")
-pacf(production.ts, main="", 36); title("PACF of Production")
+acf(price.ts.training, main="", 36); title("ACF of Price")  
+acf(production.ts.training, main="", 36); title("ACF of Production")
+pacf(price.ts.training, main="", 36); title("PACF of Price")
+pacf(production.ts.training, main="", 36); title("PACF of Production")
 
 #More EDA on Price time series (plot, histogram, acf, and pacf)
 par(mfrow=c(2,2))
-plot.ts(price.ts)
-hist(price.ts)
-acf(price.ts)
-pacf(price.ts)
+plot.ts(price.ts.training)
+hist(price.ts.training)
+acf(price.ts.training)
+pacf(price.ts.training)
 
 #More EDA on Production time series (plot, histogram, acf, and pacf)
 par(mfrow=c(2,2))
-plot.ts(production.ts)
-hist(production.ts)
-acf(production.ts)
-pacf(production.ts)
+plot.ts(production.ts.training)
+hist(production.ts.training)
+acf(production.ts.training)
+pacf(production.ts.training)
 
 #Run the Augmented Dickey-Fuller Test to determine if Unit Root is present for price and production
-adf.test(price.ts)
-adf.test(production.ts)
+adf.test(price.ts.training)
+adf.test(production.ts.training)
 #none of these tests fail to reject the null hypothesis that each of these series is unit root.
 
 #Phillips-Ouliaris Cointegration Test
-po.test(cbind(price.ts,production.ts))
+po.test(cbind(price.ts.training,production.ts.training))
 
 #Aggregate into an annualized series
-cbind(price.ts[1:12],production.ts[1:12])
-cbind(aggregate(price.ts), aggregate(production.ts))
-cbind(sum(price.ts[1:12]),sum(production.ts[1:12]))
+cbind(price.ts.training[1:12],production.ts.training[1:12])
+cbind(aggregate(price.ts.training), aggregate(production.ts.training))
+cbind(aggregate(price.ts.training), aggregate(production.ts.training))
+cbind(sum(price.ts.training[1:12]),sum(production.ts.training[1:12]))
 
-tempx<-aggregate(price.ts); tempy<-aggregate(production.ts)
+tempx<-aggregate(price.ts.training); tempy<-aggregate(production.ts.training)
 cbind(tempx[1],tempy[1]) # which is the same as sum(price.ts[1:12]) and sum(production.ts[1:12])
 
 #Plot Aggregate annualized values for Price and Production
@@ -300,12 +320,12 @@ title("Annual Price vs. Annual Production")
 rm(tempx, tempy)
 
 # Compute the correlation between the 2 series
-cat("Corr(Price , Production): ", cor(price.ts,production.ts))
+cat("Corr(Price , Production): ", cor(price.ts.training,production.ts.training))
 
 #Investigating the cointegrated model
 
 # 1. Fit a linear regression model
-GAS.lm <- lm(price.ts ~ production.ts)
+GAS.lm <- lm(price.ts.training ~ production.ts.training)
 summary(GAS.lm)
 # The slop coefficient estimate is highly significant, but the overall model and the coefficient are not signficant. # The R-square is very low.
 
@@ -320,17 +340,17 @@ plot(GAS.res, xlab="t", ylab="Residuals", lty=1, pch=1, col="blue"); title("Resi
 plot(density(GAS.res), main="Kernel Density of Residuals")
 acf(GAS.res, main="ACF of Residuals")
 pacf(GAS.res, main="PACF of Residuals")
+# these indicate that residuals still have some persistence
 
 #Cross correlation Function between Price and Production
 par(mfrow=c(1,1))
-ccf(price.ts, production.ts, main="Cross-correlation between Price and Production")
-
+ccf(price.ts.training, production.ts.training, main="Cross-correlation between Price and Production")
 # This shows that histogram and correlation may not be effective tools for time series data
-pm = ggpairs(cbind(price.ts, production.ts))
+pm = ggpairs(cbind(price.ts.training, production.ts.training))
 print(pm)
 
 #Fit an Autoregressive Model to both price and production series
-GAS.ar <- ar(cbind(price.ts, production.ts), method="ols", dmean=T, intercept=F)
+GAS.ar <- ar(cbind(price.ts.training, production.ts.training), method="ols", dmean=T, intercept=F)
 summary(GAS.ar) # Objects of the estimation results
 GAS.ar$ar
 GAS.ar$order
@@ -355,23 +375,28 @@ legend('topleft', leg.txt, lty=1, col=c('blue', 'black'), bty='n', cex=.75)
 #  acf(GAS.ar$res[-c(1:3),1], col="blue", main="ACF of Price Residuals")
 #  acf(GAS.ar$res[-c(1:3),2], main="ACF of Production Residuals")
 
-#Fit a Vector Vector AR Model
+#Fit a Vector AR Model
 #GAS.var <- VAR(cbind(price.ts,production.ts), p=3, type="trend")
-x <- cbind(price.ts,production.ts)
+x <- cbind(price.ts.training,production.ts.training)
 GAS.var <- VAR(x, p=1, type="trend")
 summary(GAS.var)
 coef(GAS.var)
 
-# 24-Step ahead forecast or 1-year forecast
-GAS.pred <- predict(GAS.var, n.ahead=24)
+# 14-Step ahead forecast or 1-year forecast
+GAS.pred <- predict(GAS.var, n.ahead=14)
+
+#Predicted values
 GAS.pred
 
-price.pred <- ts(GAS.pred$fcst$price.ts[,1], st=c(2012,2,1), fr=12)
-production.pred  <- ts(GAS.pred$fcst$production.ts[,1], st=c(2012,2,1), fr=12)
+#Actual values
+production.ts.test
+
+#price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=c(2011,2,1), fr=12)
+#production.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=c(2011,2,1), fr=12)
 
 #Plot without CI info
-ts.plot(cbind(window(price.ts, start=1978), price.pred), lty=1:2 )
-ts.plot(cbind(window(production.ts, start=1978), production.pred), lty=1:2)
+ts.plot(cbind(window(price.ts.training, start=1978), price.pred), lty=1:2 )
+ts.plot(cbind(window(production.ts.training, start=1978), production.pred), lty=1:2)
 
 VARselect(x, lag.max=30, type="both")
 summary(fit <- VAR(x, p=2, type="both"))
@@ -385,10 +410,52 @@ serial.test(fit, lags.pt=12, type="PT.adjusted")
 #Plot with 95% CI
 fit.pr = predict(fit, n.ahead = 24, ci = 0.95)  # 2 years ahead
 fanchart(fit.pr)  # plot prediction + error
-
 ```
 
 
 Task 3: Compare the accuracy of the two models' forecasting results. Also, compare and contrast the results of these two models. Is one model better than the other? What metric(s) do you use to measure whether one model is "better" than the other? Why or why not? Explain the pros and cons of each of the models in this specific context.
 
 
+```{r}
+
+pred.price=cbind(GAS.pred$fcst$price.ts.training,price.ts.test)
+pred.production=cbind(GAS.pred$fcst$production.ts.training,production.ts.test)
+
+GAS.price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=2011, fr=12)
+GAS.prod.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=2011, fr=12)
+
+### predicting SARIMA using the final model for 14 steps ahead
+modelSarima=runFitDiagnoseModel(price.ts.training,c(2,1,1),list(order = c(1,1,1), period=6))
+forecastSarima = forecast.Arima(modelSarima, h=14)
+
+# Price - Comparison of actual vs predicted values (VAR) VS predicted SARIMA
+cbind(pred.price[,1],pred.price[,5],forecastSarima$mean[1:14])
+
+#Comparison of actual vs predicted values (Production)
+cbind(pred.production[,1],pred.production[,5])
+
+# actual vs fitted (Production)
+plot.ts(pred.production[,5],type="l",col="red")
+lines(pred.production[,1],col="green")
+legend('topleft', leg.txt, lty=1, col=c('red', 'green'), bty='n', cex=.75)
+
+
+##########################################
+##### Need to work on below
+##########################################
+# Examine the residuals:
+  head(x.ar$resid)
+  par(mfrow=c(2,2))
+  plot(x, main="Simulated AR1 Model t-plot")
+  plot(x.ar$resid[-1], type="l", main="Residuals t-plot")
+  acf(x.ar$resid[-1], main="ACF of the Residual Series")
+  pacf(x.ar$resid[-1], main="ACF of the Residual Series")
+
+  par(mfrow=c(1,1))
+  hist(x.ar$resid[-1], breaks="FD", col="blue",
+       main="Residual Series", ylim=c(0,100))
+  qqnorm(x.ar$resid[-1], main="Normal Q-Q Plot of the Residuals",
+         type="p");
+  qqline(x.ar$resid[-1], col="blue")
+
+```
