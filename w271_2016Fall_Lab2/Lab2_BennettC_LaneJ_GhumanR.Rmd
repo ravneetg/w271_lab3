@@ -5,54 +5,102 @@ date: "October 25, 2016"
 output: pdf_document
 ---
 
-##Instructions:
-
-*  **Due Date: 12/16/2016 (Friday)**
-*  Late submission will not receive any credit.
-*  Instructions must be followed strictly.
-*  This lab can be completed in a group of up to 3 people. Each group only needs to make one submission.
-*  Submit 2 files: (1) a report (in pdf format) detailing your analyses; (2) your R script or juypter notebook supporting all of your answers. Missing one of this files will result in an automatic 50% reduction in score.
-*  Use only techniques and R libraries that are covered in this course.
-*  If you use R libraries and/or functions to conduct hypothesis tests not covered in this course, you will have to explain why the function you use is appropriate for the hypothesis you are asked to test
-*  Thoroughly analyze the given dataset or data series. Detect any anomalies in each of the variables.
-*  Your report needs to include a comprehensive graphical analysis
-*  Your analysis needs to be accompanied by detailed narrative. Just printing a bunch of graphs and econometric results will likely receive a very low score.
-*  Your analysis needs to show that your models are valid (in statistical sense).
-*  Your rationale of using certian metrics to choose models need to be provided. Explain the validity / pros / cons of the metric you use to choose your "best" model.
-*  Your rationale of any decisions made in your modeling needs to be explained and supported with empirical evidence.
-*  All the steps to arrive at your final model need to be shown and explained clearly.
-*  All of the assumptions of your final model need to be thoroughly tested, explained, and shown to be valid. Don't just write something like, *"the plot looks reasonable", or "the plot looks good*, as different people interpret vague terms like "reasonable" or "good" differently.
-*  Students are expected to act with regards to UC Berkeley Academic Integrity.
-
-
 # Forecast Inflation-Adjusted Gas Price
 During 2013 amid high gas prices, the Associated Press (AP) published an article about the U.S. inflation-adjusted price of gasoline and U.S. oil production. The article claims that there is "*evidence of no statistical correlation*" between oil production and gas prices. The data was not made publicly available, but comparable data was created using data from the Energy Information Administration. The workspace and data frame *gasOil.Rdata* contains the U.S. oil production (in millions of barrels of oil) and the inflation-adjusted average gas prices (in dollars) over the date range the article indicates.
 
 You have three tasks for this exericse, and both tasks need the use of the data set *gasOil.Rdata*.
 
+###Task 1: Create a **SARIMA-type** model to forecast the inflation-adjusted gas prices, and use this model to forecast the inflation-adjusted gas price for the next two years.
+
+##Exploratory Data Analysis
+
+###Overall Observations
+
+* There are 410 rows of data, and 3 columns
+* The 3 columns are Date, Production, and Price
+* There appear to be no missing values from the data frame
+
+###Variables
+
+* Dates: 
+    * Appear to be monthly, specifically the first day of each month
+    * First Date: January 1, 1978
+    * Last Date: February 1, 2012
+* Production:
+    * Mean: 210.01 (standard deviation of 41.88)
+    * Min: 119.41
+    * Max: 283.25
+* Price:
+    * Mean: 2.39 (stdev of 0.7)
+    * Min: 1.33
+    * Max: 4.43
+
+###Stationarity
+
+* The price series is not stationary, as the time series has strong persistency and inconsistent variation. The series does not appear to be stationary in mean or variance. In particular, the time series before 2005 shows a strong persistence while the time series after 2005 shows much greater variation.
+* The histogram of values shows a non-normal distribution with the largest number of the values between 1.5 and 2 with a significant positivie skew.
+* The plot of the series shows a large continuous negative shock between 1980 and 1987, a fairly consistent sequence between 1987 and 2005, then a large positive shock after 2005.  
+* The fact that this series is not stationary is further supported by the Autocorrelation Function showing significant (albeit decreasing) autocorrelation for all lags displayed.
+* The ACF does not seem to drop off.  The PACF seems to drop off after 2 lags, and the second lag seems to have a negative coefficient.  There are no sudden spikes in either ACF or PACF that would suggest a seasonal effect.
+
+####Seasonality
+
+* There appears to be some seasonal variation in the general plot that we will explore further.
+* The ACS does show some slight "waves" in the autocorrelations between lags, suggesting possible seasonality.
+
+
 ```{r}
+options(digits=7) # Set the printed number of digits to 7. Default is 7. 
+memory.limit(50000000) # Set memory limit
+# Load Libraries
+library(astsa)    # Time series package by Shummway and Stoffer
+library(zoo)      # time series package
 library(dtplyr)
 library(Hmisc)
 library(astsa)
 library(stargazer)
 library(forecast)
+library(psych)
 library(readr)
 library(reshape2)
 library(car)
+library(lmtest)
+library(sandwich)
+library(ggplot2)
+library(scales)
+library(GGally)
+library(tseries)
+library(fGarch)   # Garch package
+library(quantmod) # Financial time series package
 library(vars)
+library(stargazer)
 library(tseries)
 library("GGally")
-
+#clear out any loaded objects
+rm(list=ls())
+ls()
+#load data set
 load("gasOil.Rdata")
 ```
 
 
 Task 1: Create a **SARIMA-type** model to forecast the inflation-adjusted gas prices, and use this model to forecast the inflation-adjusted gas price for the next two years.
 
-#Exploratory Data Analysis
+#Exploratory Dat#begin EDA
+ls(gasOil)
+str(gasOil)
 
-The price series is not stationary, as the time series has strong persistency and inconsistent variation.  In particular, the time series before 2005 shows a strong persistence while the time series after 2005 shows much greater variation.  Also, ACF does not seem to drop off.  The PACF seems to drop off after 2 lags, and the second lag seems to have a negative coefficient.  There are no sudden spikes in either ACF or PACF that would suggest a seasonal effect.
+#number of columns and rows
+nrow(gasOil)
+ncol(gasOil)
 
+describe(gasOil)
+summary(gasOil)
+head(gasOil)
+tail(gasOil)
+
+#look for missing values in each column
+sapply(gasOil, function(x) sum(is.na(x)))
 
 ```{r}
 describe(gasOil)
@@ -66,6 +114,7 @@ describe(gasOil)
    #plot acf and pacf
    acf(x,main = paste("ACFPlot of",label),ylab = label,lag.max = l)
    pacf(x, main = paste("PACF Plot of",label),ylab = label,lag.max=l)
+   gasOil$Price <- ts(gasOil[,3], start=c(1978,1,1), end=c(2012,2,1), freq=12)
 
    #scatter plot matrix
    lag.plot(x, lags=9, layout=c(3,3), 
@@ -86,7 +135,9 @@ So let's take the first difference and run EDA again.  The differenced series do
 Note that in the differenced series the ACF drops off after 1 lag, but seems to reappear approximately every 6 lags and then lingers for 1 or 2 lags before dropping again.  This suggests a MA component with degree 1 and a seasonal MA component with period 6 and degree 2.  In the PACF graph, the correlation drops off after 2 lags, but then reappears approximately every 5 lags.  This suggest an AR component with degree 2 and seasonal AR component with period 5 and degree 1.
 
 ```{r}
+#Run a first difference
 diffPrice = diff(gasOil$Price,differences = 1)
+# rerun EDA for the differenced data
 runEDA(diffPrice, "Change in Price")
 ```
 
@@ -95,6 +146,8 @@ runEDA(diffPrice, "Change in Price")
 So the general ballpark is SARIMA with order (2,1,1) and seasonal order (1,1,1~2) and period 5~6.  To nail down the exact parameters, we will need to use the AIC:
 
 ```{r}
+#Create function to fit and diagnose a model
+
 runFitDiagnoseModel = function(x1,o,s,holdout=0){
 # 7. Backtesting and Out-of-Sample Forecasting
 # Re-estimate the model holding out 10 observations
@@ -162,20 +215,22 @@ model1=runFitDiagnoseModel(gasOil$Price,c(2,1,1),list(order = c(1,1,1), period=5
 ```
 ```{r}
 model2=runFitDiagnoseModel(gasOil$Price,c(2,1,1),list(order = c(1,1,1), period=6),24)
+AIC(model1,model2)
+
 
 ```
 
 ```{r}
 model3=runFitDiagnoseModel(gasOil$Price,c(2,1,1),list(order = c(1,1,2), period=5),24)
+AIC(model2,model3)
+AIC(model1,model3)
 
 ```
 
 Model 4 (SARIMA (2,1,1),(1,1,2) period 6) returned an error.  
 
 ```{r}
-print(try({
-model4=runFitDiagnoseModel(gasOil$Price,c(2,1,1),list(order = c(1,1,2), period=6),24)},silent=T
-))
+print(try({model4=runFitDiagnoseModel(gasOil$Price,c(2,1,1),list(order = c(1,1,2), period=6),24)},silent=T))
 ```
 
 Further diagnostics show that the 2nd AR and first MA coefficients in non-seasonal component of model2 are not siginificantly different from 0.  This suggests trying to fit a SARIMA (1,1,0), (1,1,1) period 6 model.
@@ -204,7 +259,10 @@ The last step is to retrain the model on the entire data set and then forecast 2
 modelSarima=runFitDiagnoseModel(gasOil$Price,c(2,1,1),list(order = c(1,1,1), period=6))
 forecastSarima = forecast.Arima(modelSarima, h=24)
 print(forecastSarima)
-
+fitSarima <- arima(gasOil$Price, order = c(1,1,1), seasonal = list(order = c(2,1,1),period=6))
+fitSarima.forecast <- forecast.Arima(fitSarima, h=24)
+plot(fitSarima.forecast)
+print(fitSarima.forecast)
 ```
 
 
@@ -232,7 +290,10 @@ str(production.ts.test)
 
 # Scatterplot Matrix
 splom(cbind(gasOil$Price,gasOil$Production), 
-      main = "Pairwise Scatterplot of Price and Production")
+      main = "Pairwise Scatterplot of Price and Production")Next we analyze how each variable regresses on time. The model regressing price on time does not have a significant p-value (0.3675), and the R-squared is very small (0.002). Neither the coefficient nor intercept shows any signs of statistical significance. A model regressing production onto time does, however, shows high significance with a p-value of 2.2e-16. Both the Intercept and the coefficient are highly significant, and the R-squared is quite high at 0.8937. We take from this regression exercise that the gas price regression model is flat with poor overall fit, while the production model is a much tighter fit and has a nice slope to the regression line. In summary, production appears to have a tighter relationship with time, when compared to price.
+
+
+# Fitting a linear trend to the Gas Price Data
 
 # Regress Price on time
 summary(price.fit_lm <- lm(price.ts.training ~ time(price.ts.training)))
@@ -259,7 +320,11 @@ abline(production.fit_lm) # add the fitted regression line to the plot
 
 #Look at the first few records for both price and production
 head(cbind(price.ts.training, production.ts.training))
+```
 
+Then we evaluate the correlation between the price and production variables. The correlation is quite low at 0.0278. We then plot the two lines together and plotting all data points to see if we can visually identify any patterns.  There appears to be no/low correlation between the two variables. The Price vs. Production plot also reveals no discernible patterns.
+
+```{r}
 #Evaluate Correlation between price and correlation
 cor(price.ts.training, production.ts.training)
 
@@ -272,7 +337,11 @@ plot(price.ts.training,production.ts.training); title("Price vs Production")
 
 # Show summary statistics, even though they might not be useful for a timeseries
 summary(cbind(price.ts.training, production.ts.training))
+```
 
+Next we plot the autocorrelation and partial autocorrelation functions for both price and production for 36 lags. The ACF of Price shows strong autocorrelation through all lags with some waviness that might represent seasonality. The partial autocorrelation for Price shows the first lag is negatively significant, with the remaining non-significant lags showing an irreguular oscillation around the zero line. The ACF for Production shows even stronger autocorrelation between lags than Price, with an even slower descent as we move out lags. The partial autocorrelation function for Production shows the first 5 lags as significant (although lag 3 was not significant), then lags 11 and 12 are also significant, as were lags 23 and 24. Neither price nor production has a normal distribution of values when we analyze a histogram for each.
+
+```{r}
 #Plot the autocorrelation fuction and partial autocorrelation function for both price and production for 36 lags
 par(mfrow=c(2,2))
 acf(price.ts.training, main="", 36); title("ACF of Price")  
@@ -298,10 +367,23 @@ pacf(production.ts.training)
 adf.test(price.ts.training)
 adf.test(production.ts.training)
 #none of these tests fail to reject the null hypothesis that each of these series is unit root.
+```
+
+We will then run the Augmented Dickey-Fuller Test to determine if Unit Root is present for both variables. Neither test fail to reject the null hypothesis that each of these series is unit root. We also ran the Phillips-Ouliaris Cointegration test and determined that the variables we could not reject the null hypothesis that the data is not cointegrated.
+
+```{r}
+
+#Run the Augmented Dickey-Fuller Test
+adf.test(price.ts)
+adf.test(production.ts)
 
 #Phillips-Ouliaris Cointegration Test
 po.test(cbind(price.ts.training,production.ts.training))
+```
 
+We then used the aggregate function to average the data for each year. We then re-plotted the aggregated values to try to identify any patterns.  There were no discernable patterns here either.
+
+```{r}
 #Aggregate into an annualized series
 cbind(price.ts.training[1:12],production.ts.training[1:12])
 cbind(aggregate(price.ts.training), aggregate(production.ts.training))
@@ -318,7 +400,13 @@ title("Annual Price vs. Annual Production")
 
 #remove objects
 rm(tempx, tempy)
+```
 
+We will then look at how price regresses on production. The overall model (as well as the production coefficient) show no significance with a p-value of 0.57. The slope intercept is highly significant, but along with the model's non-significant p, and a low R-squared value, there appears to be no linear relationship between these variables. This matches what we witnessed in previous plots of the complete data as well as the aggregate values. An evaluation of the residuals from this model shows strong autocorrelations between lags in the ACF and a non-normal distribution with a strong positive skew.
+
+A cross-correlation of the two time-series shows the lagged relationship between price and production. The peak positive correlation between the two series is at the -2 lag, and likely increases as you move into further negative lags. The correlations decrease as you approach zero lags, and become negative correlations once you move past the positive 2 lag.
+
+```{r}
 # Compute the correlation between the 2 series
 cat("Corr(Price , Production): ", cor(price.ts.training,production.ts.training))
 
@@ -348,7 +436,11 @@ ccf(price.ts.training, production.ts.training, main="Cross-correlation between P
 # This shows that histogram and correlation may not be effective tools for time series data
 pm = ggpairs(cbind(price.ts.training, production.ts.training))
 print(pm)
+```
 
+And finally we begin to fit models to the two timeseries. We will begin by fitting an autoregressive model to both timeseries (which we bind together). The order of the AR model is 26, suggesting that the best fitting VAR model will also be of order 26. The residuals of this AR(26) model appear to have a normal distribution. A plot of estimated residuals from the AR model resembles white noise except for several periods after 2005 where extreme positive and negative residual values are seen. The autocorrelation function for the residuals of the AR(26) model for price show no correllations at any lag. The ACF for production model residuals show slight negative significance at what appear to be lags 12 and 24.
+
+```{r}
 #Fit an Autoregressive Model to both price and production series
 GAS.ar <- ar(cbind(price.ts.training, production.ts.training), method="ols", dmean=T, intercept=F)
 summary(GAS.ar) # Objects of the estimation results
@@ -369,16 +461,22 @@ title("Estimated Resduals from the VAR(26) Model")
 leg.txt <- c('Price', 'Production')
 legend('topleft', leg.txt, lty=1, col=c('blue', 'black'), bty='n', cex=.75)
 
-#par(mfrow=c(2,2))
-#  ts.plot(GAS.ar$res[-c(1:3),1], col="blue", main="Price Residuals from a VAR(26) Model")
-#  ts.plot(GAS.ar$res[-c(1:3),2], col="black", main="Production Residuals from a VAR(26) Model")
-#  acf(GAS.ar$res[-c(1:3),1], col="blue", main="ACF of Price Residuals")
-#  acf(GAS.ar$res[-c(1:3),2], main="ACF of Production Residuals")
+par(mfrow=c(2,2))
+ts.plot(GAS.ar$res[27:410,1], col="blue", main="Price Residuals from a AR(26) Model")
+ts.plot(GAS.ar$res[27:410,2], col="black", main="Production Residuals from a AR(26) Model")
+acf(GAS.ar$res[27:410,1], col="blue", main="ACF of Price Residuals")
+acf(GAS.ar$res[27:410,2], main="ACF of Production Residuals")
+```
 
+Next we will fit a vector autoregressive model to the bound price and production time series. The VAR model with period 3 has roots of the characteristic polynomial do not exceed unity in absolute value, raising doubts about the stationarity of this model. I tested VAR models with the period argument of 1 and of 3, neither of which returned polynomial roots that exceeded unity. 
+
+```{r}
 #Fit a Vector AR Model
 #GAS.var <- VAR(cbind(price.ts,production.ts), p=3, type="trend")
 x <- cbind(price.ts.training,production.ts.training)
-GAS.var <- VAR(x, p=1, type="trend")
+GAS.var <- VAR(x, p=3, type="trend")
+GAS.var1 <- VAR(x, p=1, type="trend") 
+
 summary(GAS.var)
 coef(GAS.var)
 
@@ -386,22 +484,44 @@ coef(GAS.var)
 GAS.pred <- predict(GAS.var, n.ahead=14)
 
 #Predicted values
+```
+
+We will then use this VAR model to predict gas prices for the subsequent 2 years. The value of the period argument used for the previous VAR model has a large impact on the prediction values.
+
+Using the VAR model with the period = 3, we see a gradual decline in the prediction for price, and a gradual increase in the production levels for the forward-looking 2 years. With a VAR model using a period of 1, the model prediction shows price remaining fairly flat while production increases significantly over the 2 year prediction period. The VAR model shows an order of 28 has the lowest AIC.
+
+```{r}
 GAS.pred
 
 #Actual values
 production.ts.test
 
-#price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=c(2011,2,1), fr=12)
-#production.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=c(2011,2,1), fr=12)
+price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=c(2011,2,1), fr=12)
+production.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=c(2011,2,1), fr=12)
 
 #Plot without CI info
 ts.plot(cbind(window(price.ts.training, start=1978), price.pred), lty=1:2 )
 ts.plot(cbind(window(production.ts.training, start=1978), production.pred), lty=1:2)
 
+#Plot predictions without CI info (Period 3)
+par(mfrow=c(2,1))
+ts.plot(cbind(window(price.ts, start=1978), price.pred), lty=1:2, main="Plot of Actual and Predicted Price (VAR Period 3)")
+ts.plot(cbind(window(production.ts, start=1978), production.pred), lty=1:2, main="Plot of Actual and Predicted Production (VAR Period 3)")
+
+#Plot predictions without CI info (Period 1)
+par(mfrow=c(2,1))
+ts.plot(cbind(window(price.ts, start=1978), price.pred1), lty=1:2, main="Plot of Actual and Predicted Price (VAR Period 1)")
+ts.plot(cbind(window(production.ts, start=1978), production.pred1), lty=1:2, main="Plot of Actual and Predicted Production (VAR Period 1)")
+
 VARselect(x, lag.max=30, type="both")
 summary(fit <- VAR(x, p=2, type="both"))
 
 summary(VAR(x, p=1, type="both"))  # "both" fits constant + trend
+```
+
+The autocorrelation of the VAR model residuals shows significant ACF autocorrelations between lags at lag 2, 11, 22 for the price variable residuals with an oscilation across all lags. The production residuals shows very significant correllations between lags with a more exaggerated, but irregular oscilation. The price and production combined residuals show non-significance but with a defined oscillation. A portmanteau test reveals that the there is evidence to reject the null hypothesis that no autocorrelation exists among the residuals.
+
+```{r}
 
 #Run an Autocorrelation on the residuals
 acf(resid(fit), 52)
