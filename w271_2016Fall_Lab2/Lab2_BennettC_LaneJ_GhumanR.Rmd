@@ -421,13 +421,20 @@ The AIC score of SARIMA model is much lower than VAR. By looking at the predicte
 
 
 ```{r}
+#run AIC
 AIC(GAS.var,modelSarima)
 
+#merging predicted values and actual values to see them side by side
 pred.price=cbind(GAS.pred$fcst$price.ts.training,price.ts.test)
 pred.production=cbind(GAS.pred$fcst$production.ts.training,production.ts.test)
 
+# converting forecasted values to ts
 GAS.price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=2011, fr=12)
 GAS.prod.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=2011, fr=12)
+
+#below are plots for predicted vs actual values (using VAR)
+ts.plot(cbind(window(price.ts, start = 1978), GAS.price.pred), lty = 1:2)
+ts.plot(cbind(window(production.ts, start = 1978), GAS.prod.pred), lty = 1:2)
 
 ### predicting SARIMA using the final model for 14 steps ahead
 modelSarima=runFitDiagnoseModel(price.ts.training,c(2,1,1),list(order = c(1,1,1), period=6))
@@ -435,6 +442,7 @@ forecastSarima = forecast.Arima(modelSarima, h=14)
 
 # Price - Comparison of actual vs predicted values (VAR) VS predicted SARIMA
 cbind(pred.price[,1],pred.price[,5],forecastSarima$mean[1:14])
+pred.price
 
 #Comparison of actual vs predicted values (Production)
 cbind(pred.production[,1],pred.production[,5])
@@ -444,6 +452,12 @@ plot.ts(pred.production[,5],type="l",col="red")
 lines(pred.production[,1],col="green")
 legend('topleft', leg.txt, lty=1, col=c('red', 'green'), bty='n', cex=.75)
 
+# running SARIMA forecase
+forecastSarima.price.ts<-ts(forecastSarima$mean[1:14], st=2011, fr=12)
+forecastSarima.price.ts
+#below are plots for predicted vs actual values (using SARIMA)
+ts.plot(cbind(window(price.ts, start = 1978), forecastSarima.price.ts), lty = 1:2,col=c(rep("dark green",1),rep("red",3)))
+ts.plot(cbind(window(production.ts, start = 1978), pred.production[,1]), lty = 1:2,col=c(rep("dark green",1),rep("red",3)))
 
 # Examine the residuals:
   head(modelSarima$resid)
@@ -459,5 +473,6 @@ legend('topleft', leg.txt, lty=1, col=c('red', 'green'), bty='n', cex=.75)
   qqnorm(modelSarima$resid[-1], main="Normal Q-Q Plot of the Residuals",
          type="p");
   qqline(modelSarima$resid[-1], col="blue")
+
 
 ```
