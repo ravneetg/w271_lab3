@@ -550,8 +550,8 @@ legend('topleft', leg.txt, lty=1, col=c('red', 'green'), bty='n', cex=.75)
 forecastSarima.price.ts<-ts(forecastSarima$mean[1:14], st=2011, fr=12)
 forecastSarima.price.ts
 #below are plots for predicted vs actual values (using SARIMA)
-ts.plot(cbind(window(price.ts, start = 1978), forecastSarima.price.ts), lty = 1:2,col=c(rep("dark green",1),rep("red",3)))
-ts.plot(cbind(window(production.ts, start = 1978), pred.production[,1]), lty = 1:2,col=c(rep("dark green",1),rep("red",3)))
+ts.plot(cbind(window(price.ts, start = 1978), forecastSarima.price.ts),main="Actual vs Predicted(SARIMA)" lty = 1:2,col=c(rep("dark green",1),rep("red",3)))
+ts.plot(cbind(window(production.ts, start = 1978), pred.production[,1]),main="Actual vs Predicted (SARIMA)", lty = 1:2,col=c(rep("dark green",1),rep("red",3)))
 
 # Examine the residuals:
   head(modelSarima$resid)
