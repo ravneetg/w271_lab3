@@ -199,12 +199,22 @@ model6=runFitDiagnoseModel(gasOil$Price,c(1,1,1),list(order = c(1,1,3), period=6
 AIC(model2,model6)
 ```
 
-The last step is to retrain the model on the entire data set and then forecast 2 years out.  
+The last step is to retrain the model on the entire data set and then forecast 2 years out.  As you can see, the SARIMA model predicts an continuing increasse in oil prices.
 
 ```{r}
 modelSarima=runFitDiagnoseModel(gasOil$Price,c(2,1,1),list(order = c(1,1,1), period=6))
-forecastSarima = forecast.Arima(modelSarima, h=24)
-print(forecastSarima)
+  fit.fcast  = forecast.Arima(modelSarima, h=24)
+
+  par(mfrow=c(1,1),new=F)
+  plot(fit.fcast,lty=2,
+       main="Two Year Forecast",ylim=c(0,5.5),
+     
+       ylab="Original, Estimated, and Forecast Values",xlim=c(0,435))
+  lines(gasOil$Price, col="navy", lty=2)
+  leg.txt <- c("Original", "Forecast")
+  legend("bottomleft", legend=leg.txt, lty=c(2,1),
+         col=c("navy","blue","blue"), lwd=1,
+         bty='n', cex=1)
 
 
 ```
@@ -393,8 +403,8 @@ GAS.pred
 #Actual values
 production.ts.test
 
-#price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=c(2011,2,1), fr=12)
-#production.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=c(2011,2,1), fr=12)
+price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=c(2011,2,1), fr=12)
+production.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=c(2011,2,1), fr=12)
 
 #Plot without CI info
 ts.plot(cbind(window(price.ts.training, start=1978), price.pred), lty=1:2 )
@@ -412,6 +422,7 @@ serial.test(fit, lags.pt=12, type="PT.adjusted")
 #Plot with 95% CI
 fit.pr = predict(fit, n.ahead = 24, ci = 0.95)  # 2 years ahead
 fanchart(fit.pr)  # plot prediction + error
+
 ```
 
 
