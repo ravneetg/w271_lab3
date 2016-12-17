@@ -31,7 +31,7 @@ During 2013 amid high gas prices, the Associated Press (AP) published an article
 You have three tasks for this exericse, and both tasks need the use of the data set *gasOil.Rdata*.
 
 ```{r}
-library(dtplyr)
+library(dplyr)
 library(Hmisc)
 library(astsa)
 library(stargazer)
@@ -43,7 +43,6 @@ library(vars)
 library(tseries)
 library("GGally")
 
-#setwd("/Users/rghuman/Documents/DS/w271/assignments/w271_2016Fall_lab2")
 load("gasOil.Rdata")
 ```
 
@@ -287,7 +286,7 @@ Next we analyze how each variable regresses on time. The model regressing price 
 # Regress Price on time
 summary(price.fit_lm <- lm(price.ts.training ~ time(price.ts.training)))
 price.fit_lm$coeff
-price.fit_lm$qr
+head(price.fit_lm$qr)
 head(price.fit_lm$fitted.values)
 
 # Fitting a linear trend to the Gas Production Data
@@ -448,7 +447,7 @@ GAS.ar$order
 # Diagnosis using the estimated residuals
 dim(GAS.ar$res)
 summary(GAS.ar$res)
-GAS.ar$res #list the residual
+head(GAS.ar$res) #list the residual
 
 ggpairs(GAS.ar$res) # the residuals do look "fairly" normal and
                    # not correlated with each other
@@ -514,41 +513,47 @@ Task 3: Compare the accuracy of the two models' forecasting results. Also, compa
 The AIC score of SARIMA model is much lower than VAR. By looking at the predicted (backtesting) values, the seasonal arima (SARIMA) model seems to do a better job at predicting the values as the vector auto-regressive shows larger variance for predicted values. The seasonal model captures the pattern on changes every 6 periods, so it is able to capture the seasonal component in the time series pattern better than the VAR. But there is one inherent problem with time-series - even if we can capture seasonality, we still cannot predict new phenomenon that may change the future behavior.
 
 Pros of VAR models: 
-- VAR models are easy to estimate. 
-- No need to specify endogenous and exogenous variables. 
+(1) VAR models are easy to estimate. 
+(2) No need to specify endogenous and exogenous variables. 
 
 Cons: 
-- Multicollinearity can be a problem as more series are added to the model
-- As number of variables increases, the number of parameters increases by a lot.
+(1) Multicollinearity can be a problem as more series are added to the model
+(2) As number of variables increases, the number of parameters increases by a lot.
 
 
 Pros of SARIMA models: 
-- SARIMA considers the order in the time-series and captures historical info by using AR to take into account the past values, MA for present and future values, and differening to attain stationarity from seasonal effects.
+(1) SARIMA considers the order in the time-series and captures historical info by using AR to take into account the past values, MA for present and future values, and differening to attain stationarity from seasonal effects.
 
 Cons: 
-- SARIMA can capture only linear relationship
-- Seasonal ARIMA models can potentially have a large number of parameters and combinations of terms. 
+(1) SARIMA can capture only linear relationship
+(2) Seasonal ARIMA models can potentially have a large number of parameters and combinations of terms. 
 
 
 ```{r}
-#run AIC
-AIC(GAS.var,modelSarima)
-
-#merging predicted values and actual values to see them side by side
-pred.price=cbind(GAS.pred$fcst$price.ts.training,price.ts.test)
-pred.production=cbind(GAS.pred$fcst$production.ts.training,production.ts.test)
+### predicting SARIMA using the final model for 14 steps ahead
+modelSarima=runFitDiagnoseModel(price.ts.training,c(2,1,1),list(order = c(1,1,1), period=6))
+forecastSarima = forecast.Arima(modelSarima, h=14)
 
 # converting forecasted values to ts
 GAS.price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=2011, fr=12)
 GAS.prod.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=2011, fr=12)
 
+#run AIC
+AIC(GAS.var,modelSarima)
+
+str(GAS.pred$fcst$price.ts.training)
+# 14-Step ahead forecast
+GAS.pred <- predict(GAS.var, n.ahead=14)
+
+#merging predicted values and actual values to see them side by side
+pred.price=cbind(GAS.pred$fcst$price.ts.training,price.ts.test)
+pred.production=cbind(GAS.pred$fcst$production.ts.training,production.ts.test)
+
+GAS.pred$fcst$price.ts
 #below are plots for predicted vs actual values (using VAR)
 ts.plot(cbind(window(price.ts, start = 1978), GAS.price.pred),main="Predicted vs Actual - Price(using VAR)", lty = 1:2)
 ts.plot(cbind(window(production.ts, start = 1978), GAS.prod.pred),main="Actual vs Predicted - Production (using VAR)", lty = 1:2)
 
-### predicting SARIMA using the final model for 14 steps ahead
-modelSarima=runFitDiagnoseModel(price.ts.training,c(2,1,1),list(order = c(1,1,1), period=6))
-forecastSarima = forecast.Arima(modelSarima, h=14)
 
 # Price - Comparison of actual vs predicted values (VAR) VS predicted SARIMA
 cbind(pred.price[,1],pred.price[,5],forecastSarima$mean[1:14])
@@ -566,7 +571,7 @@ legend('topleft', leg.txt, lty=1, col=c('red', 'green'), bty='n', cex=.75)
 forecastSarima.price.ts<-ts(forecastSarima$mean[1:14], st=2011, fr=12)
 forecastSarima.price.ts
 #below are plots for predicted vs actual values (using SARIMA)
-ts.plot(cbind(window(price.ts, start = 1978), forecastSarima.price.ts),main="Actual vs Predicted(SARIMA)" lty = 1:2,col=c(rep("dark green",1),rep("red",3)))
+ts.plot(cbind(window(price.ts, start = 1978), forecastSarima.price.ts),main="Actual vs Predicted(SARIMA)", lty = 1:2,col=c(rep("dark green",1),rep("red",3)))
 ts.plot(cbind(window(production.ts, start = 1978), pred.production[,1]),main="Actual vs Predicted (SARIMA)", lty = 1:2,col=c(rep("dark green",1),rep("red",3)))
 
 # Examine the residuals:
@@ -586,3 +591,4 @@ ts.plot(cbind(window(production.ts, start = 1978), pred.production[,1]),main="Ac
 
 
 ```
+
