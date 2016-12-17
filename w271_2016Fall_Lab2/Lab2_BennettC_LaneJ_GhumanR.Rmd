@@ -512,7 +512,11 @@ fanchart(fit.pr)  # plot prediction + error
 Task 3: Compare the accuracy of the two models' forecasting results. Also, compare and contrast the results of these two models. Is one model better than the other? What metric(s) do you use to measure whether one model is "better" than the other? Why or why not? Explain the pros and cons of each of the models in this specific context.
 
 The AIC score of SARIMA model is much lower than VAR. By looking at the predicted (backtesting) values, the seasonal arima (SARIMA) model seems to do a better job at predicting the values as the vector auto-regressive shows larger variance for predicted values. The seasonal model captures the pattern on changes every 6 periods, so it is able to capture the seasonal component in the time series pattern better than the VAR. But there is one inherent problem with time-series - even if we can capture seasonality, we still cannot predict new phenomenon that may change the future behavior.
-
+Pros of VAR models:
+VAR models are easy to estimate.
+No need to specify endogenous and exogenous variables.
+Cons:
+A lot of parameters would require a lot of estimations.
 
 ```{r}
 #run AIC
