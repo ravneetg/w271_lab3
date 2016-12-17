@@ -490,8 +490,8 @@ price.pred <- ts(GAS.pred$fcst$price.ts.training[,1], st=c(2011,2,1), fr=12)
 production.pred  <- ts(GAS.pred$fcst$production.ts.training[,1], st=c(2011,2,1), fr=12)
 
 #Plot without CI info
-ts.plot(cbind(window(price.ts.training, start=1978), price.pred), lty=1:2 )
-ts.plot(cbind(window(production.ts.training, start=1978), production.pred), lty=1:2)
+ts.plot(cbind(window(price.ts, start=1978), price.pred), lty=1:2 ,main="Actual and Predicted Price for VAR(1)")
+ts.plot(cbind(window(production.ts, start=1978), production.pred), lty=1:2,main="Actual and Predicted Production for VAR(1)")
 
 VARselect(x, lag.max=30, type="both")
 summary(fit <- VAR(x, p=2, type="both"))
