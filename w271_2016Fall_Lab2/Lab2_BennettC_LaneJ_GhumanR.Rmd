@@ -50,9 +50,41 @@ load("gasOil.Rdata")
 
 Task 1: Create a **SARIMA-type** model to forecast the inflation-adjusted gas prices, and use this model to forecast the inflation-adjusted gas price for the next two years.
 
-#Exploratory Data Analysis
+##Exploratory Data Analysis
 
-The price series is not stationary, as the time series has strong persistency and inconsistent variation.  In particular, the time series before 2005 shows a strong persistence while the time series after 2005 shows much greater variation.  Also, ACF does not seem to drop off.  The PACF seems to drop off after 2 lags, and the second lag seems to have a negative coefficient.  There are no sudden spikes in either ACF or PACF that would suggest a seasonal effect.
+###Overall Observations
+
+* There are 410 rows of data, and 3 columns
+* The 3 columns are Date, Production, and Price
+* There appear to be no missing values from the data frame
+
+###Variables
+
+* Dates: 
+    * Appear to be monthly, specifically the first day of each month
+    * First Date: January 1, 1978
+    * Last Date: February 1, 2012
+* Production:
+    * Mean: 210.01 (standard deviation of 41.88)
+    * Min: 119.41
+    * Max: 283.25
+* Price:
+    * Mean: 2.39 (stdev of 0.7)
+    * Min: 1.33
+    * Max: 4.43
+
+###Stationarity
+
+* The price series is not stationary, as the time series has strong persistency and inconsistent variation.  In particular, the time series before 2005 shows a strong persistence while the time series after 2005 shows much greater variation.  Also, ACF does not seem to drop off.  The PACF seems to drop off after 2 lags, and the second lag seems to have a negative coefficient.  There are no sudden spikes in either ACF or PACF that would suggest a seasonal effect.
+* The histogram of values shows a non-normal distribution with the largest number of the values between 1.5 and 2 with a significant positivie skew.
+* The plot of the series shows a large continuous negative shock between 1980 and 1987, a fairly consistent sequence between 1987 and 2005, then a large positive shock after 2005.  
+* The fact that this series is not stationary is further supported by the Autocorrelation Function showing significant (albeit decreasing) autocorrelation for all lags displayed.
+* The ACF does not seem to drop off.  The PACF seems to drop off after 2 lags, and the second lag seems to have a negative coefficient.  There are no sudden spikes in either ACF or PACF that would suggest a seasonal effect.
+
+####Seasonality
+
+* There appears to be some seasonal variation in the general plot that we will explore further.
+* The ACS does show some slight "waves" in the autocorrelations between lags, suggesting possible seasonality.
 
 
 ```{r}
